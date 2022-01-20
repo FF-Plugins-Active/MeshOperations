@@ -42,6 +42,7 @@
 "D:\Epic\Engines\UE_4.27\Engine\Intermediate\Build\Win64\UE4Editor\Development\Slate\UE4Editor-Slate.lib"
 "D:\Epic\Engines\UE_4.27\Engine\Intermediate\Build\Win64\UE4Editor\Development\SlateCore\UE4Editor-SlateCore.lib"
 "D:\Epic\Engines\UE_4.27\Engine\Intermediate\Build\Win64\UE4Editor\Development\Core\UE4Editor-Core.lib"
+"D:\Epic\Engines\UE_4.27\Engine\Plugins\Runtime\ProceduralMeshComponent\Intermediate\Build\Win64\UE4Editor\Development\ProceduralMeshComponent\UE4Editor-ProceduralMeshComponent.lib"
 "delayimp.lib"
 "wininet.lib"
 "rpcrt4.lib"

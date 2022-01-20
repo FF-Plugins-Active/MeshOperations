@@ -235,6 +235,9 @@
 /I D:\Epic\Projects\FROZEN\SDKs\FF_Plugins\Plugins\MeshOperations\Intermediate\Build\Win64\UE4Editor\Inc\MeshOperations
 /I D:\Epic\Projects\FROZEN\SDKs\FF_Plugins\Plugins\MeshOperations\Source
 /I D:\Epic\Projects\FROZEN\SDKs\FF_Plugins\Plugins\MeshOperations\Source\MeshOperations\Public
+/I ..\Plugins\Runtime\ProceduralMeshComponent\Intermediate\Build\Win64\UE4Editor\Inc\ProceduralMeshComponent
+/I ..\Plugins\Runtime\ProceduralMeshComponent\Source
+/I ..\Plugins\Runtime\ProceduralMeshComponent\Source\ProceduralMeshComponent\Public
 /I ThirdParty\PhysX3\PxShared\include
 /I ThirdParty\PhysX3\PxShared\include\cudamanager
 /I ThirdParty\PhysX3\PxShared\include\filebuf

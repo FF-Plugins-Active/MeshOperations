@@ -24,21 +24,12 @@ public class MeshOperations : ModuleRules
 		PublicDependencyModuleNames.AddRange(
             new string[]
             {
-                "Core",
-				// ... add other public dependencies that you statically link with here ...
+                // ... add other public dependencies that you statically link with here ...
+				"Core",
                 "ProceduralMeshComponent"
             }
             );
 			
-		PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
-			
-		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{

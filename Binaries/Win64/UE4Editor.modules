@@ -2,6 +2,6 @@
 	"BuildId": "17155196",
 	"Modules": 
 	{
-		"MeshOperations": "UE4Editor-MeshOperations-0032.dll"
+		"MeshOperations": "UE4Editor-MeshOperations.dll"
 	}
 }

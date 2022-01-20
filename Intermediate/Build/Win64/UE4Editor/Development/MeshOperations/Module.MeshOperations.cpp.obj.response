@@ -238,6 +238,11 @@
 /I ..\Plugins\Runtime\ProceduralMeshComponent\Intermediate\Build\Win64\UE4Editor\Inc\ProceduralMeshComponent
 /I ..\Plugins\Runtime\ProceduralMeshComponent\Source
 /I ..\Plugins\Runtime\ProceduralMeshComponent\Source\ProceduralMeshComponent\Public
+/I ..\Plugins\Marketplace\GLTFExporter\Intermediate\Build\Win64\UE4Editor\Inc\GLTFExporter
+/I ..\Plugins\Marketplace\GLTFExporter\Source
+/I ..\Plugins\Marketplace\GLTFExporter\Source\GLTFExporter\Public
+/I ..\Plugins\Marketplace\GLTFExporter\Intermediate\Build\Win64\UE4Editor\Inc\GLTFExporterRuntime
+/I ..\Plugins\Marketplace\GLTFExporter\Source\GLTFExporterRuntime\Public
 /I ThirdParty\PhysX3\PxShared\include
 /I ThirdParty\PhysX3\PxShared\include\cudamanager
 /I ThirdParty\PhysX3\PxShared\include\filebuf
@@ -261,7 +266,7 @@
 /I ThirdParty\PhysX3\APEX_1.4\shared\general\RenderDebug\public
 /I ThirdParty\PhysX3\APEX_1.4\shared\general\PairFilter\include
 /I ThirdParty\PhysX3\APEX_1.4\shared\internal\include
-/I "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.30.30705\INCLUDE"
+/I "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\INCLUDE"
 /I "C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um"
 /I "C:\Program Files (x86)\Windows Kits\10\include\10.0.20348.0\ucrt"
 /I "C:\Program Files (x86)\Windows Kits\10\include\10.0.20348.0\shared"

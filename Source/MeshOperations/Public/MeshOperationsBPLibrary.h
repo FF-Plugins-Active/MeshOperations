@@ -3,14 +3,15 @@
 #pragma once
 
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "KismetProceduralMeshLibrary.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
+#include "UObject/UObjectBaseUtility.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
 #include "ProceduralMeshComponent.h"
-#include "KismetProceduralMeshLibrary.h"
-#include "UObject/UObjectBaseUtility.h"
+#include "GLTFExporterRuntimeModule.h"
 #include "MeshOperationsBPLibrary.generated.h"
 
 /* 
@@ -36,19 +37,19 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
 	GENERATED_UCLASS_BODY()
 
     //Trigger Static Mesh Component Creation With Name
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "AddStaticMeshCompWithName", Keywords = "static,mesh,component,name"), Category = "Add Component")
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "AddStaticMeshCompWithName", Keywords = "static,mesh,component,name"), Category = "MeshOperations")
     static void AddStaticMeshCompWithName(const FName In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC);
 
     //Trigger Scene Component Creation With Name
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "AddSceneCompWithName", Keywords = "scene,component,mesh,name"), Category = "Add Component")
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "AddSceneCompWithName", Keywords = "scene,component,mesh,name"), Category = "MeshOperations")
     static void AddSceneCompWithName(const FName In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "AddProcMeshCompWithName", Keywords = "procedural,mesh,component,name"), Category = "Add Component")
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "AddProcMeshCompWithName", Keywords = "procedural,mesh,component,name"), Category = "MeshOperations")
     static void AddProcMeshCompWithName(const FName In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC);
 
     UFUNCTION(BlueprintPure, meta = (DispayName = "GetFullName", Keywords = "original,name"), Category = "Add Component")
     static FString GetFullName(const UObject* Object);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "GetVertexLocations", Keywords = "vertex,locations"), Category = "Add Component")
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "GetVertexLocations", Keywords = "vertex,locations"), Category = "MeshOperations")
     static void GetVertexLocations(UStaticMesh* TargetStaticMesh, const int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents);
 };
