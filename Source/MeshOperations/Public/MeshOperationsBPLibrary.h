@@ -11,7 +11,6 @@
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
 #include "ProceduralMeshComponent.h"
-#include "GLTFExporterRuntimeModule.h"
 #include "MeshOperationsBPLibrary.generated.h"
 
 /* 
@@ -47,7 +46,7 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddProcMeshCompWithName", Keywords = "procedural,mesh,component,name"), Category = "MeshOperations")
     static void AddProcMeshCompWithName(const FName In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC);
 
-    UFUNCTION(BlueprintPure, meta = (DispayName = "GetFullName", Keywords = "original,name"), Category = "Add Component")
+    UFUNCTION(BlueprintPure, meta = (DispayName = "GetFullName", Keywords = "original,name"), Category = "MeshOperations")
     static FString GetFullName(const UObject* Object);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "GetVertexLocations", Keywords = "vertex,locations"), Category = "MeshOperations")

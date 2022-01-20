@@ -9,7 +9,6 @@
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
 #include "ProceduralMeshComponent.h"
-#include "GLTFExporterRuntimeModule.h"
 #include "MeshOperations.h"
 
 UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer)
