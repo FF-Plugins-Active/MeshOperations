@@ -52,9 +52,15 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "GetVertexValues", Keywords = "vertex,locations"), Category = "MeshOperations")
     static void GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, TArray<FVector>& ShiftedVertices, FVector& VerticesCenter);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "MoveComponentsToCenter", Keywords = "move,components,center"), Category = "MeshOperations")
-    static void MoveComponentsToCenter(USceneComponent* AssetRoot);
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeCenter", Keywords = "optimize,move,components,center"), Category = "MeshOperations")
+    static void OptimizeCenter(USceneComponent* AssetRoot);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeHierarchy", Keywords = "optimize,hierarchy"), Category = "MeshOperations")
     static void OptimizeHierarchy(USceneComponent* AssetRoot);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeHeight", Keywords = "optimize,height"), Category = "MeshOperations")
+    static void OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", Keywords = "record,transforms"), Category = "MeshOperations")
+    static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
 };

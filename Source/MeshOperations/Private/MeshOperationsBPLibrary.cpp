@@ -165,7 +165,7 @@ void UMeshOperationsBPLibrary::GetVertexValues(UStaticMeshComponent* StaticMeshC
         }
 }
 
-void UMeshOperationsBPLibrary::MoveComponentsToCenter(USceneComponent* AssetRoot)
+void UMeshOperationsBPLibrary::OptimizeCenter(USceneComponent* AssetRoot)
 {
     // Array variable for children components.
     TArray<USceneComponent*> Children;
@@ -238,5 +238,29 @@ void UMeshOperationsBPLibrary::OptimizeHierarchy(USceneComponent* AssetRoot)
             // Check asset root's children number after process. If it is equal one return to start.
             ChildrenCount = AssetRoot->GetNumChildrenComponents();
         }
+    }
+}
+
+void UMeshOperationsBPLibrary::OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset)
+{
+    FVector Origin;
+    FVector BoxExtent;
+    AssetRoot->GetOwner()->GetActorBounds(false, Origin, BoxExtent, true);
+
+    float NewHeight = BoxExtent.Z + Z_Offset;
+    FVector NewLocation(0.f, 0.f, NewHeight);
+
+    AssetRoot->AddWorldOffset(NewLocation, false, nullptr, ETeleportType::None);
+}
+
+void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents)
+{
+    AssetRoot->GetChildrenComponents(true,ChildComponents);
+    AllComponents = ChildComponents;
+    AllComponents.Add(AssetRoot);
+
+    for (int32 ChildID = 0; ChildID < AllComponents.Num(); ChildID++)
+    {
+        MapTransform.Add(AllComponents[ChildID], AllComponents[ChildID]->GetRelativeTransform());
     }
 }
