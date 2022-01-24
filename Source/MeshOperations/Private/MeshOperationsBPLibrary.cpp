@@ -11,8 +11,7 @@
 #include "ProceduralMeshComponent.h"
 #include "MeshOperations.h"
 
-UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer)
-: Super(ObjectInitializer)
+UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
 {
 
 }
@@ -37,11 +36,10 @@ void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FName In_SMC_Name
         StaticMeshComp->AttachToComponent(ActorRootForSMC, FAttachmentTransformRules(SMC_Attachment_Rule, true));
 
         if (SMC_Manual_Attachment == true)
-
-        {
-            //Set Realtive Transform.
-            StaticMeshComp->SetRelativeTransform(SMC_Relative_Transform);
-        }
+            {
+                //Set Realtive Transform.
+                StaticMeshComp->SetRelativeTransform(SMC_Relative_Transform);
+            }
 
         //Output Pins.
         Out_SMC_Name = In_SMC_Name;
@@ -50,10 +48,10 @@ void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FName In_SMC_Name
     }
 
     else
-    {
-        //If outer is not valid, we can not create a static mesh component and program will crash. So we just return false.
-        Is_SMC_Created = false;
-    }
+        {
+            //If outer is not valid, we can not create a static mesh component and program will crash. So we just return false.
+            Is_SMC_Created = false;
+        }
 }
 
 void UMeshOperationsBPLibrary::AddSceneCompWithName(const FName In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC)
@@ -73,10 +71,10 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(const FName In_SC_Name, AAct
         SceneComp->AttachToComponent(ActorRootForSC, FAttachmentTransformRules(SC_Attachment_Rule, true));
 
         if (SC_Manual_Attachment == true)
-        {
-            //Set Realtive Transform.
-            SceneComp->SetRelativeTransform(SC_Relative_Transform);
-        }
+            {
+                //Set Realtive Transform.
+                SceneComp->SetRelativeTransform(SC_Relative_Transform);
+            }
 
         //Output Pins.
         Out_SC_Name = In_SC_Name;
@@ -85,10 +83,10 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(const FName In_SC_Name, AAct
     }
 
     else
-    {
-        //If outer is not valid, we can not create a "scene component" and program will crash. So we just return false.       
-        Is_SC_Created = false;
-    }
+        {
+            //If outer is not valid, we can not create a "scene component" and program will crash. So we just return false.       
+            Is_SC_Created = false;
+        }
 }
 
 void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FName In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC)
@@ -111,10 +109,10 @@ void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FName In_PMC_Name, 
         ProcMeshComp->AttachToComponent(ActorRootForPMC, FAttachmentTransformRules(PMC_Attachment_Rule, true));
 
         if (PMC_Manual_Attachment == true)
-        {
-            //Set Realtive Transform.
-            ProcMeshComp->SetRelativeTransform(PMC_Relative_Transform);
-        }
+            {
+                //Set Realtive Transform.
+                ProcMeshComp->SetRelativeTransform(PMC_Relative_Transform);
+            }
 
         //Output Pins
         Out_PMC_Name = In_PMC_Name;
@@ -123,25 +121,122 @@ void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FName In_PMC_Name, 
     }
 
     else
-    {
-        //If outer is not valid, we can not create a procedural mesh component and program will crash. So we just return false.
-        Is_PMC_Created = false;
-    }
+        {
+            //If outer is not valid, we can not create a procedural mesh component and program will crash. So we just return false.
+            Is_PMC_Created = false;
+        }
 }
 
-FString UMeshOperationsBPLibrary::GetFullName(const UObject* Object)
+FString UMeshOperationsBPLibrary::GetClassName(const UObject* Object)
 {
-    UObject* StopOuter = Object->GetOuter();
-    EObjectFullNameFlags Flags = EObjectFullNameFlags::None;
-    return Object->GetFullName(StopOuter, Flags);
+    UClass* Class = Object->GetClass();
+    return Class->GetName();
 }
 
-void UMeshOperationsBPLibrary::GetVertexLocations(UStaticMesh* TargetStaticMesh, const int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
+void UMeshOperationsBPLibrary::GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, TArray<FVector>& ShiftedVertices, FVector& VerticesCenter)
 {
+    
+    // Initial variable for vertices sum.
+    FVector Sum(0.f);
+
+    // Get Static Mesh
+    UStaticMesh* TargetStaticMesh = StaticMeshComponent->GetStaticMesh();
+
+    // Get Mesh Section Count.
     int32 MeshSectionCount = TargetStaticMesh->GetNumSections(0);
 
+    // Get recursive vertex values for all static mesh sections.
     for (int32 i = 0; i < (MeshSectionCount--); i++)
+        {
+            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(TargetStaticMesh, LODs, i, Vertices, Triangles, Normals, UVs, Tangents);
+        }
+    
+    // Get Vertices Center (Relative Location).
+    for (int32 VectorID = 0; VectorID < Vertices.Num(); VectorID++)
+        {
+            Sum += Vertices[VectorID];
+        }
+    VerticesCenter = Sum / ((float)Vertices.Num());
+   
+    // Shift vertices with vertices center
+    for (int32 VectorID = 0; VectorID < Vertices.Num(); VectorID++)
+        {
+            ShiftedVertices.Add(Vertices[VectorID] - VerticesCenter);
+        }
+}
+
+void UMeshOperationsBPLibrary::MoveComponentsToCenter(USceneComponent* AssetRoot)
+{
+    // Array variable for children components.
+    TArray<USceneComponent*> Children;
+
+    // Array variable for children locations.
+    TArray<FVector> ChildrenLocations;
+
+    // Get children components of asset root.
+    AssetRoot->GetChildrenComponents(false, Children);
+
+    // Add relative locations of children components to children locations array.
+    for (int32 ChildID = 0; ChildID < Children.Num(); ChildID++)
+        {
+            ChildrenLocations.Add(Children[ChildID]->GetRelativeLocation());
+        }
+    
+    // Calculate assembly center (Relative Location).
+    FVector Sum(0.f);
+    for (int32 ChildID = 0; ChildID < (ChildrenLocations.Num()); ChildID++)
+        {
+            Sum += ChildrenLocations[ChildID];
+        }
+    FVector AssemblyCenter = Sum / ((float)ChildrenLocations.Num());
+
+    // Subtract assembly center from each child's relative location.
+    for (int32 ChildID = 0; ChildID < ChildrenLocations.Num(); ChildID++)
+        {
+            Children[ChildID]->SetRelativeLocation((ChildrenLocations[ChildID] - AssemblyCenter), false, nullptr, ETeleportType::None);
+        }
+}
+
+void UMeshOperationsBPLibrary::OptimizeHierarchy(USceneComponent* AssetRoot)
+{
+    // Initial while variable
+    int32 ChildrenCount = AssetRoot->GetNumChildrenComponents();
+    
+    // Check if asset root has one direct child or not.
+    while (ChildrenCount == 1)
     {
-        UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(TargetStaticMesh, LODs, i, Vertices, Triangles, Normals, UVs, Tangents);
+        // Array variable for children components.
+        TArray<USceneComponent*> Children;
+
+        // Get children components of asset root.
+        AssetRoot->GetChildrenComponents(false, Children);
+
+        // Get first and only child as middle parent.
+        USceneComponent* MiddleParent = Children[0];
+
+        // Get class name of middle parent.
+        FString ClassName = MiddleParent->GetClass()->GetName();
+
+        // If middle parent is a scene component, do operations.
+        if (ClassName == TEXT("SceneComponent"))
+        {
+            // Create array variable for middle children.
+            TArray<USceneComponent*> MiddleChildren;
+            
+            // Get middle children of middle parent.
+            MiddleParent->GetChildrenComponents(false, MiddleChildren);
+            
+            // For Each Loop function for middle children. It attachs each middle child to asset root.
+            for (int32 ChildID = 0; ChildID < MiddleChildren.Num(); ChildID++)
+            {
+                MiddleChildren[ChildID]->AttachToComponent(AssetRoot, FAttachmentTransformRules::KeepWorldTransform);
+            }
+            
+            // Destroy middle parent after child attachment.
+            MiddleParent->DestroyComponent(true);
+
+            // Check asset root's children number after process. If it is equal one return to start.
+            ChildrenCount = AssetRoot->GetNumChildrenComponents();
+        }
     }
 }
