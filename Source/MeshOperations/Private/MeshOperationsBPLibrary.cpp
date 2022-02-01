@@ -2,13 +2,14 @@
 
 #include "MeshOperationsBPLibrary.h"
 #include "KismetProceduralMeshLibrary.h"
+#include "ProceduralMeshComponent.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 #include "UObject/UObjectBaseUtility.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
-#include "ProceduralMeshComponent.h"
+#include "Math/Vector.h"
 #include "MeshOperations.h"
 
 UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
@@ -133,35 +134,45 @@ FString UMeshOperationsBPLibrary::GetClassName(const UObject* Object)
     return Class->GetName();
 }
 
-void UMeshOperationsBPLibrary::GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, TArray<FVector>& ShiftedVertices, FVector& VerticesCenter)
+void UMeshOperationsBPLibrary::GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<FVector>& UniqueVertices, TArray<FVector>& ShiftedVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, FVector& VerticesCenter, FVector& InitialMeshCenterWorld)
 {
     
     // Initial variable for vertices sum.
     FVector Sum(0.f);
 
-    // Get Static Mesh
+    // Initial set array to prevent same vertices.
+    TSet<FVector> VerticesSet;
+
+    // Get Static Mesh.
     UStaticMesh* TargetStaticMesh = StaticMeshComponent->GetStaticMesh();
+
+    // Initial component bound
+    InitialMeshCenterWorld = StaticMeshComponent->Bounds.Origin;
 
     // Get Mesh Section Count.
     int32 MeshSectionCount = TargetStaticMesh->GetNumSections(0);
 
     // Get recursive vertex values for all static mesh sections.
-    for (int32 i = 0; i < (MeshSectionCount--); i++)
+    for (int32 SectionID = 0; SectionID < (MeshSectionCount--); SectionID++)
         {
-            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(TargetStaticMesh, LODs, i, Vertices, Triangles, Normals, UVs, Tangents);
+            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(TargetStaticMesh, LODs, SectionID, Vertices, Triangles, Normals, UVs, Tangents);
+            VerticesSet.Append(Vertices);
         }
     
+    // Out for Unique Vertices
+    UniqueVertices = VerticesSet.Array();
+
     // Get Vertices Center (Relative Location).
-    for (int32 VectorID = 0; VectorID < Vertices.Num(); VectorID++)
+    for (int32 VectorID = 0; VectorID < UniqueVertices.Num(); VectorID++)
         {
             Sum += Vertices[VectorID];
         }
-    VerticesCenter = Sum / ((float)Vertices.Num());
+    VerticesCenter = Sum / ((float)UniqueVertices.Num());
    
     // Shift vertices with vertices center
-    for (int32 VectorID = 0; VectorID < Vertices.Num(); VectorID++)
+    for (int32 VectorID = 0; VectorID < UniqueVertices.Num(); VectorID++)
         {
-            ShiftedVertices.Add(Vertices[VectorID] - VerticesCenter);
+            ShiftedVertices.Add(UniqueVertices[VectorID] - VerticesCenter);
         }
 }
 
@@ -263,4 +274,3 @@ void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap
     {
         MapTransform.Add(AllComponents[ChildID], AllComponents[ChildID]->GetRelativeTransform());
     }
-}

@@ -4,13 +4,14 @@
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "KismetProceduralMeshLibrary.h"
+#include "ProceduralMeshComponent.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 #include "UObject/UObjectBaseUtility.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
-#include "ProceduralMeshComponent.h"
+#include "Math/Vector.h"
 #include "MeshOperationsBPLibrary.generated.h"
 
 /* 
@@ -50,7 +51,7 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static FString GetClassName(const UObject* Object);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "GetVertexValues", Keywords = "vertex,locations"), Category = "MeshOperations")
-    static void GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, TArray<FVector>& ShiftedVertices, FVector& VerticesCenter);
+    static void GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<FVector>& UniqueVertices, TArray<FVector>& ShiftedVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, FVector& VerticesCenter, FVector& InitialMeshCenterWorld);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeCenter", Keywords = "optimize,move,components,center"), Category = "MeshOperations")
     static void OptimizeCenter(USceneComponent* AssetRoot);
@@ -63,4 +64,5 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", Keywords = "record,transforms"), Category = "MeshOperations")
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
+
 };
