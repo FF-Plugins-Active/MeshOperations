@@ -274,3 +274,4 @@ void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap
     {
         MapTransform.Add(AllComponents[ChildID], AllComponents[ChildID]->GetRelativeTransform());
     }
+}
