@@ -3,8 +3,8 @@
 #pragma once
 
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "KismetProceduralMeshLibrary.h"
-#include "ProceduralMeshComponent.h"
+#include "KismetProceduralMeshLibrary.h"        //Pivot System and Add Proc Mesh Comp with Name
+#include "ProceduralMeshComponent.h"            //Pivot System and Add Proc Mesh Comp with Name
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 #include "UObject/UObjectBaseUtility.h"
@@ -12,6 +12,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
 #include "Math/Vector.h"
+#include "Engine.h"                             //Structure for Delete Empty Parents
 #include "MeshOperationsBPLibrary.generated.h"
 
 /* 
@@ -47,8 +48,11 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddProcMeshCompWithName", Keywords = "procedural,mesh,component,name"), Category = "MeshOperations")
     static void AddProcMeshCompWithName(const FName In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC);
 
-    UFUNCTION(BlueprintPure, meta = (DispayName = "GetClassName", Keywords = "class,name"), Category = "MeshOperations")
+    UFUNCTION(BlueprintPure, meta = (DispayName = "GetClassName", Keywords = "name,class"), Category = "MeshOperations")
     static FString GetClassName(const UObject* Object);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Object Name for Package", Keywords = "name,object,package"), Category = "MeshOperations")
+    static void GetObjectNameForPackage(USceneComponent* Object, FString Delimeter, FString& OutName);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "GetVertexValues", Keywords = "vertex,locations"), Category = "MeshOperations")
     static void GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<FVector>& UniqueVertices, TArray<FVector>& ShiftedVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, FVector& VerticesCenter, FVector& InitialMeshCenterWorld);
@@ -56,13 +60,34 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeCenter", Keywords = "optimize,move,components,center"), Category = "MeshOperations")
     static void OptimizeCenter(USceneComponent* AssetRoot);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeHierarchy", Keywords = "optimize,hierarchy"), Category = "MeshOperations")
-    static void OptimizeHierarchy(USceneComponent* AssetRoot);
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
+    static void DeleteEmptyRoots(USceneComponent* AssetRoot);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Parents", Keywords = "optimize,hierarchy,empty,parent,parents"), Category = "MeshOperations")
+    static void DeleteEmptyParents(USceneComponent* AssetRoot, TArray<USceneComponent*>& OutChildren);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeHeight", Keywords = "optimize,height"), Category = "MeshOperations")
     static void OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", Keywords = "record,transforms"), Category = "MeshOperations")
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
+
+};
+
+USTRUCT(BlueprintType)
+struct FMeshProperties
+{
+    GENERATED_USTRUCT_BODY()
+
+public:
+
+    UPROPERTY(BlueprintReadWrite, Editanywhere)
+    UStaticMesh* Static_Mesh;
+
+    UPROPERTY(BlueprintReadWrite, Editanywhere)
+    USceneComponent* Grand_Parent;
+
+    UPROPERTY(BlueprintReadWrite, Editanywhere)
+    FTransform World_Transform;
 
 };
