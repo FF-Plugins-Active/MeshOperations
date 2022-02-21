@@ -299,8 +299,10 @@ void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)
     }
 }
 
-void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, TArray<USceneComponent*>& OutChildren)
+void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, int32& OutProcessed, TArray<USceneComponent*>& OutChildren)
 {
+    int32 Processed = 0;
+
     TArray <USceneComponent*> Children; // Required construction of array variable for children components.
     AssetRoot->GetChildrenComponents(true, Children);
 
@@ -366,11 +368,17 @@ void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, TA
         Out_SMC->SetStaticMesh(EachProperty->Static_Mesh);
         Out_SMC->AttachToComponent(EachProperty->Grand_Parent, FAttachmentTransformRules::KeepWorldTransform, NAME_None);
         Out_SMC->SetWorldTransform(EachProperty->World_Transform);
+
+        // Count processed items.
+        Processed = Processed + 1;
     }
 
     // Out children components array variable.
     AssetRoot->GetChildrenComponents(true, Children);
     OutChildren = Children;
+    
+    // Show processed static mesh components.
+    OutProcessed = Processed;
 }
 
 void UMeshOperationsBPLibrary::OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset)

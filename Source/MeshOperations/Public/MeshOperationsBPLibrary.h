@@ -64,7 +64,7 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Parents", Keywords = "optimize,hierarchy,empty,parent,parents"), Category = "MeshOperations")
-    static void DeleteEmptyParents(USceneComponent* AssetRoot, TArray<USceneComponent*>& OutChildren);
+    static void DeleteEmptyParents(USceneComponent* AssetRoot, int32& OutProcessed, TArray<USceneComponent*>& OutChildren);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeHeight", Keywords = "optimize,height"), Category = "MeshOperations")
     static void OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset);
