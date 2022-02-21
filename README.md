@@ -4,7 +4,6 @@
 - Runtime Pivot Center
 - Runtime Pivot Custom Location
 - Add Scene / Static / Procedural Mesh Comps with Name
-- Get Full Name of Component (inc. component outer name)
 - Get Class Name
 - Get Object Name of Packaged Build
 - Delete Empty Roots
