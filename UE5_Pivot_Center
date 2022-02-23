@@ -1,3 +1,6 @@
+MAP_Meshes = Dynamic Mesh to Static Mesh Component
+Copy bellow.
+
 Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_1"
    FunctionReference=(MemberParent=Class'"/Script/GeometryScriptingCore.GeometryScriptLibrary_SceneUtilityFunctions"',MemberName="CreateDynamicMeshPool")
    NodePosX=384
