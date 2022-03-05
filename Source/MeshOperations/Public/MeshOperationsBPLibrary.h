@@ -3,16 +3,16 @@
 #pragma once
 
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "KismetProceduralMeshLibrary.h"        //Pivot System and Add Proc Mesh Comp with Name
-#include "ProceduralMeshComponent.h"            //Pivot System and Add Proc Mesh Comp with Name
+#include "Engine.h"
+
+//Object Types.
 #include "UObject/Object.h"
-#include "UObject/UObjectGlobals.h"
-#include "UObject/UObjectBaseUtility.h"
-#include "Components/StaticMeshComponent.h"
-#include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
-#include "Math/Vector.h"
-#include "Engine.h"                             //Structure for Delete Empty Parents
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "ProceduralMeshComponent.h"        // Pivot System and Add Proc Mesh Comp with Name
+#include "KismetProceduralMeshLibrary.h"    // Pivot System and Add Proc Mesh Comp with Name
+
 #include "MeshOperationsBPLibrary.generated.h"
 
 /* 
@@ -32,6 +32,36 @@
 *	For more info on custom blueprint nodes visit documentation:
 *	https://wiki.unrealengine.com/Custom_Blueprint_Node_Creation
 */
+
+UENUM()
+enum PivotOperations
+{
+    None        UMETA(DisplayName = "None"),
+    Center      UMETA(DisplayName = "Center"),
+    Custom      UMETA(DisplayName = "Custom"),
+};
+
+USTRUCT(BlueprintType)
+struct FMeshProperties
+{
+    GENERATED_USTRUCT_BODY()
+
+public:
+
+    UPROPERTY(BlueprintReadWrite, Editanywhere)
+        UStaticMesh* Static_Mesh;
+
+    UPROPERTY(BlueprintReadWrite, Editanywhere)
+        USceneComponent* Grand_Parent;
+
+    UPROPERTY(BlueprintReadWrite, Editanywhere)
+        FTransform World_Transform;
+
+};
+
+UDELEGATE(BlueprintAuthorityOnly)
+DECLARE_DYNAMIC_DELEGATE_OneParam(FCenterPivot, bool, IsSuccessfull);
+
 UCLASS()
 class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
 {
@@ -54,11 +84,8 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Object Name for Package", Keywords = "name,object,package"), Category = "MeshOperations")
     static void GetObjectNameForPackage(USceneComponent* Object, FString Delimeter, FString& OutName);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "GetVertexValues", Keywords = "vertex,locations"), Category = "MeshOperations")
-    static void GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<FVector>& UniqueVertices, TArray<FVector>& ShiftedVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, FVector& VerticesCenter, FVector& InitialMeshCenterWorld);
-
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeCenter", Keywords = "optimize,move,components,center"), Category = "MeshOperations")
-    static void OptimizeCenter(USceneComponent* AssetRoot);
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Vertices Operations", Keywords = "vertex,vertices, locations, pivot, center, custom"), Category = "MeshOperations")
+    static void VerticesOperations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector> &OutAllVertices, TArray<FVector>& OutUniqueVertices);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);
@@ -66,28 +93,13 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Parents", Keywords = "optimize,hierarchy,empty,parent,parents"), Category = "MeshOperations")
     static void DeleteEmptyParents(USceneComponent* AssetRoot, int32& OutProcessed, TArray<USceneComponent*>& OutChildren);
 
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeCenter", Keywords = "optimize,move,components,center"), Category = "MeshOperations")
+    static void OptimizeCenter(USceneComponent* AssetRoot);
+
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeHeight", Keywords = "optimize,height"), Category = "MeshOperations")
     static void OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", Keywords = "record,transforms"), Category = "MeshOperations")
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
-
-};
-
-USTRUCT(BlueprintType)
-struct FMeshProperties
-{
-    GENERATED_USTRUCT_BODY()
-
-public:
-
-    UPROPERTY(BlueprintReadWrite, Editanywhere)
-    UStaticMesh* Static_Mesh;
-
-    UPROPERTY(BlueprintReadWrite, Editanywhere)
-    USceneComponent* Grand_Parent;
-
-    UPROPERTY(BlueprintReadWrite, Editanywhere)
-    FTransform World_Transform;
 
 };

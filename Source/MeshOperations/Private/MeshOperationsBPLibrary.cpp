@@ -1,18 +1,31 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "MeshOperationsBPLibrary.h"
-#include "KismetProceduralMeshLibrary.h"    //Pivot System and Add Proc Mesh Comp with Name
-#include "ProceduralMeshComponent.h"        //Pivot System and Add Proc Mesh Comp with Name
+#include "Async/Async.h" 
+
+// Object Types.
 #include "UObject/Object.h"
-#include "UObject/UObjectGlobals.h"
-#include "UObject/UObjectBaseUtility.h"
-#include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "ProceduralMeshComponent.h"
+#include "KismetProceduralMeshLibrary.h"
+
+// Calculations.
 #include "Math/Vector.h"
+
+// Unique Objects.
+#include "EditableMesh.h"                       //Pivot System.
+#include "MeshDescription.h"                    //Pivot System.
+
+// Buffers.
+#include "StaticMeshResources.h"                //Pivot System.
+#include "StaticMeshAttributes.h"               //Pivot System.
+#include "Rendering/PositionVertexBuffer.h"     //Pivot System.
+
 #include "MeshOperations.h"
 
-UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
+UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 
 }
@@ -154,9 +167,9 @@ void UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, 
     // Initialize variables.
     FString GeneratedName;
     TArray<FString> NameSections;
-    
+
     FString ObjectName = Object->GetName();
-  
+
     ObjectName.ParseIntoArray(NameSections, *Delimeter, true);
 
     if (WITH_EDITOR == true)
@@ -170,7 +183,7 @@ void UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, 
 
     else
     {
-        for (int32  SectionID = 0; SectionID < 1; SectionID++)
+        for (int32 SectionID = 0; SectionID < 1; SectionID++)
         {
             int32 SectionCount = NameSections.Num();
             int32 DeletedID = SectionCount - 1;
@@ -179,48 +192,76 @@ void UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, 
 
         GeneratedName = FString::Join(NameSections, *Delimeter);
     }
+    
     OutName = GeneratedName;
 }
 
-void UMeshOperationsBPLibrary::GetVertexValues(UStaticMeshComponent* StaticMeshComponent, const int32 LODs, TArray<FVector>& Vertices, TArray<FVector>& UniqueVertices, TArray<FVector>& ShiftedVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, FVector& VerticesCenter, FVector& InitialMeshCenterWorld)
+void UMeshOperationsBPLibrary::VerticesOperations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector>& OutAllVertices, TArray<FVector>& OutUniqueVertices)
 {
-    // Initial variable for vertices sum.
-    FVector Sum(0.f);
+    if (StaticMeshComponent != nullptr)
+    {  
+        // Get PositionVertexBuffer at start.
+        FPositionVertexBuffer* PositionVertexBuffer = &StaticMeshComponent->GetStaticMesh()->GetRenderData()->LODResources[LODs].VertexBuffers.PositionVertexBuffer;
+        AllVerticesCount = PositionVertexBuffer->GetNumVertices();
 
-    // Initial set array to prevent same vertices.
-    TSet<FVector> VerticesSet;
+        // Get vertex positions from PositionVertexBuffer and convert it to world space from mesh space.
+        FVector VertexPosition;
+        TSet<FVector> UniqueVertices;
 
-    // Get Static Mesh.
-    UStaticMesh* TargetStaticMesh = StaticMeshComponent->GetStaticMesh();
-
-    // Initial component bound
-    InitialMeshCenterWorld = StaticMeshComponent->Bounds.Origin;
-
-    // Get Mesh Section Count.
-    int32 MeshSectionCount = TargetStaticMesh->GetNumSections(0);
-
-    // Get recursive vertex values for all static mesh sections.
-    for (int32 SectionID = 0; SectionID < (MeshSectionCount--); SectionID++)
+        for (int32 VertexIndex = 0; VertexIndex < AllVerticesCount; VertexIndex++)
         {
-            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(TargetStaticMesh, LODs, SectionID, Vertices, Triangles, Normals, UVs, Tangents);
-            VerticesSet.Append(Vertices);
+            VertexPosition = StaticMeshComponent->GetComponentTransform().TransformPosition(PositionVertexBuffer->VertexPosition(VertexIndex));
+            OutAllVertices.Add(VertexPosition);
+            UniqueVertices.Add(VertexPosition);
         }
-    
-    // Out for Unique Vertices
-    UniqueVertices = VerticesSet.Array();
+        
+        // Output Pins
+        OutUniqueVertices = UniqueVertices.Array();
+        UniqueVerticesCount = UniqueVertices.Num();
 
-    // Get Vertices Center (Relative Location).
-    for (int32 VectorID = 0; VectorID < UniqueVertices.Num(); VectorID++)
+        // SECOND STAGE - Start Pivot Operations if told.
+        if (Pivot != PivotOperations::None)
         {
-            Sum += Vertices[VectorID];
+            // Initial variables.
+            FVector NewPivot;
+            FVector OriginalCenter = StaticMeshComponent->Bounds.Origin;
+
+            switch (Pivot)
+            {
+            case None:
+                NewPivot = FVector(0.f);
+                break;
+
+            case Center:
+                NewPivot = StaticMeshComponent->Bounds.Origin;
+                break;
+
+            case Custom:
+                NewPivot = CustomPivot;
+                break;
+
+            default:
+                NewPivot = FVector(0.f);
+                break;
+            }
+            
+            // Get static mesh descriptons for move pivot process.
+            FMeshDescription* MeshDescription = StaticMeshComponent->GetStaticMesh()->GetMeshDescription(LODs);
+            FStaticMeshLODResources& StaticMeshLODResources = StaticMeshComponent->GetStaticMesh()->GetRenderData()->LODResources[LODs];
+
+            for (int32 VertexIndex = 0; VertexIndex < UniqueVerticesCount; VertexIndex++)
+            {
+                MeshDescription->VertexAttributes().SetAttribute(FVertexID(VertexIndex), MeshAttribute::Vertex::Position, 0, UniqueVertices.Array()[VertexIndex] - NewPivot);
+            }
+
+            // Build static mesh again from mesh description.
+            StaticMeshComponent->GetStaticMesh()->BuildFromMeshDescription(*MeshDescription, StaticMeshLODResources);
+            StaticMeshComponent->GetStaticMesh()->Build(true);
+
+            // Offset mesh to retain its original world location.
+            StaticMeshComponent->AddWorldOffset(OriginalCenter - StaticMeshComponent->Bounds.Origin, false, nullptr, ETeleportType::None);
         }
-    VerticesCenter = Sum / ((float)UniqueVertices.Num());
-   
-    // Shift vertices with vertices center
-    for (int32 VectorID = 0; VectorID < UniqueVertices.Num(); VectorID++)
-        {
-            ShiftedVertices.Add(UniqueVertices[VectorID] - VerticesCenter);
-        }
+    }
 }
 
 void UMeshOperationsBPLibrary::OptimizeCenter(USceneComponent* AssetRoot)
@@ -236,30 +277,30 @@ void UMeshOperationsBPLibrary::OptimizeCenter(USceneComponent* AssetRoot)
 
     // Add relative locations of children components to children locations array.
     for (int32 ChildID = 0; ChildID < Children.Num(); ChildID++)
-        {
-            ChildrenLocations.Add(Children[ChildID]->GetRelativeLocation());
-        }
-    
+    {
+        ChildrenLocations.Add(Children[ChildID]->GetRelativeLocation());
+    }
+
     // Calculate assembly center (Relative Location).
     FVector Sum(0.f);
     for (int32 ChildID = 0; ChildID < (ChildrenLocations.Num()); ChildID++)
-        {
-            Sum += ChildrenLocations[ChildID];
-        }
+    {
+        Sum += ChildrenLocations[ChildID];
+    }
     FVector AssemblyCenter = Sum / ((float)ChildrenLocations.Num());
 
     // Subtract assembly center from each child's relative location.
     for (int32 ChildID = 0; ChildID < ChildrenLocations.Num(); ChildID++)
-        {
-            Children[ChildID]->SetRelativeLocation((ChildrenLocations[ChildID] - AssemblyCenter), false, nullptr, ETeleportType::None);
-        }
+    {
+        Children[ChildID]->SetRelativeLocation((ChildrenLocations[ChildID] - AssemblyCenter), false, nullptr, ETeleportType::None);
+    }
 }
 
 void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)
 {
     // Initial while variable
     int32 ChildrenCount = AssetRoot->GetNumChildrenComponents();
-    
+
     // Check if asset root has one direct child or not.
     while (ChildrenCount == 1)
     {
@@ -280,16 +321,16 @@ void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)
         {
             // Create array variable for middle children.
             TArray<USceneComponent*> MiddleChildren;
-            
+
             // Get middle children of middle parent.
             MiddleParent->GetChildrenComponents(false, MiddleChildren);
-            
+
             // For Each Loop function for middle children. It attachs each middle child to asset root.
             for (int32 ChildID = 0; ChildID < MiddleChildren.Num(); ChildID++)
             {
                 MiddleChildren[ChildID]->AttachToComponent(AssetRoot, FAttachmentTransformRules::KeepWorldTransform);
             }
-            
+
             // Destroy middle parent after child attachment.
             MiddleParent->DestroyComponent(true);
 
@@ -310,7 +351,7 @@ void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, in
     TMap<FString, FMeshProperties> MAP_Properties;
 
     for (int32 ChildID = 0; ChildID < Children.Num(); ChildID++)
-    { 
+    {
         if (Children[ChildID]->GetClass()->GetName() == TEXT("StaticMeshComponent"))
         {
             // Referance of each child component.
@@ -340,7 +381,7 @@ void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, in
             }
         }
     }
-    
+
     TArray<FString> Array_Names; // Required construction of array variable for MAP_Properties' key array strings.
     MAP_Properties.GetKeys(Array_Names);
 
@@ -348,9 +389,9 @@ void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, in
     {
         // Required local variables for new static mesh component.
         AActor* Outer = AssetRoot->GetOwner();
-        
+
         // If a static mesh component uses same name and same static mesh after destroying it, it will give error. So we added -N name suffix.
-        FString NameString = Array_Names[NameID] + TEXT("-N"); 
+        FString NameString = Array_Names[NameID] + TEXT("-N");
         FName New_SMC_Name = FName(*NameString);
 
         FTransform RelativeTransform;
@@ -376,7 +417,7 @@ void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, in
     // Out children components array variable.
     AssetRoot->GetChildrenComponents(true, Children);
     OutChildren = Children;
-    
+
     // Show processed static mesh components.
     OutProcessed = Processed;
 }
@@ -395,7 +436,7 @@ void UMeshOperationsBPLibrary::OptimizeHeight(USceneComponent* AssetRoot, float 
 
 void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents)
 {
-    AssetRoot->GetChildrenComponents(true,ChildComponents);
+    AssetRoot->GetChildrenComponents(true, ChildComponents);
     AllComponents = ChildComponents;
     AllComponents.Add(AssetRoot);
 

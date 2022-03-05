@@ -26,7 +26,9 @@ public class MeshOperations : ModuleRules
             {
                 // ... add other public dependencies that you statically link with here ...
 				"Core",
-                "ProceduralMeshComponent"
+                "ProceduralMeshComponent",
+				"EditableMesh",
+				"MeshDescription",
             }
             );
 			
@@ -36,12 +38,13 @@ public class MeshOperations : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore"
+				"SlateCore",
+				"RHI",
+				"RenderCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
-		
-		
+			
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{
