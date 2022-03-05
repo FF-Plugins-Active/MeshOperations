@@ -1,6 +1,6 @@
 # MeshOperations
 
-- Vertex Operations (Get vertex locations in world space and change pivot locations if necessary)
+- Vertex Operations (Get vertex locations in world space and change pivot locations if necessary) // FIX NEED FOR CHANGE PIVOT !
 
 - Add Scene Component with Name
 - Add Static Mesh Component with Name
