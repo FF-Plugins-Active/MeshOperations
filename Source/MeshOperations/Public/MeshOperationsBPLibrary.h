@@ -10,8 +10,7 @@
 #include "Components/ActorComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "ProceduralMeshComponent.h"        // Pivot System and Add Proc Mesh Comp with Name
-#include "KismetProceduralMeshLibrary.h"    // Pivot System and Add Proc Mesh Comp with Name
+#include "ProceduralMeshComponent.h"        // Add Proc Mesh Comp with Name
 
 #include "MeshOperationsBPLibrary.generated.h"
 

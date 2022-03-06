@@ -9,14 +9,14 @@
 #include "Components/ActorComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "ProceduralMeshComponent.h"
-#include "KismetProceduralMeshLibrary.h"
 
 // Calculations.
 #include "Math/Vector.h"
 
 // Unique Objects.
-#include "EditableMesh.h"                       //Pivot System.
 #include "MeshDescription.h"                    //Pivot System.
+#include "MeshDescriptionBase.h"
+#include "Engine/StaticMesh.h"
 
 // Buffers.
 #include "StaticMeshResources.h"                //Pivot System.
@@ -222,14 +222,16 @@ void UMeshOperationsBPLibrary::VerticesOperations(UStaticMeshComponent* StaticMe
         // SECOND STAGE - Start Pivot Operations if told.
         if (Pivot != PivotOperations::None)
         {
-            // Initial variables.
+            // Get original mesh center to calculate offset after moving vertices.
+            FVector CenterOriginal = StaticMeshComponent->Bounds.Origin;
+            
+            // Change new pivot destination.
             FVector NewPivot;
-            FVector OriginalCenter = StaticMeshComponent->Bounds.Origin;
-
+            
             switch (Pivot)
             {
             case None:
-                NewPivot = FVector(0.f);
+                NewPivot;
                 break;
 
             case Center:
@@ -241,11 +243,11 @@ void UMeshOperationsBPLibrary::VerticesOperations(UStaticMeshComponent* StaticMe
                 break;
 
             default:
-                NewPivot = FVector(0.f);
+                NewPivot;
                 break;
             }
             
-            // Get static mesh descriptons for move pivot process.
+            // Get static mesh informations for move pivot process. 
             FMeshDescription* MeshDescription = StaticMeshComponent->GetStaticMesh()->GetMeshDescription(LODs);
             FStaticMeshLODResources& StaticMeshLODResources = StaticMeshComponent->GetStaticMesh()->GetRenderData()->LODResources[LODs];
 
@@ -254,12 +256,15 @@ void UMeshOperationsBPLibrary::VerticesOperations(UStaticMeshComponent* StaticMe
                 MeshDescription->VertexAttributes().SetAttribute(FVertexID(VertexIndex), MeshAttribute::Vertex::Position, 0, UniqueVertices.Array()[VertexIndex] - NewPivot);
             }
 
+            TVertexAttributesConstRef<FVector> NewVerticesLocations = MeshDescription->VertexAttributes().GetAttributesRef<FVector>(MeshAttribute::Vertex::Position);
+            
             // Build static mesh again from mesh description.
             StaticMeshComponent->GetStaticMesh()->BuildFromMeshDescription(*MeshDescription, StaticMeshLODResources);
             StaticMeshComponent->GetStaticMesh()->Build(true);
-
+            
             // Offset mesh to retain its original world location.
-            StaticMeshComponent->AddWorldOffset(OriginalCenter - StaticMeshComponent->Bounds.Origin, false, nullptr, ETeleportType::None);
+            FVector LocationDifference = StaticMeshComponent->GetComponentLocation(); //We will change this with StaticMeshComponent->Bounds.Origin after tangent and normals calculation.
+            StaticMeshComponent->AddWorldOffset(CenterOriginal - LocationDifference, false, nullptr, ETeleportType::None);
         }
     }
 }
