@@ -28,8 +28,9 @@ public class MeshOperations : ModuleRules
 				"Core",
                 "ProceduralMeshComponent",
 				"MeshDescription",
+				"EditableMesh"
             }
-            );
+			);
 			
 		PrivateDependencyModuleNames.AddRange(
 			new string[]

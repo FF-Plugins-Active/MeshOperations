@@ -48,10 +48,10 @@ struct FMeshProperties
 public:
 
     UPROPERTY(BlueprintReadWrite, Editanywhere)
-        UStaticMesh* Static_Mesh;
+        UStaticMesh* Static_Mesh = nullptr;
 
     UPROPERTY(BlueprintReadWrite, Editanywhere)
-        USceneComponent* Grand_Parent;
+        USceneComponent* Grand_Parent = nullptr;
 
     UPROPERTY(BlueprintReadWrite, Editanywhere)
         FTransform World_Transform;
@@ -83,8 +83,11 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Object Name for Package", Keywords = "name,object,package"), Category = "MeshOperations")
     static void GetObjectNameForPackage(USceneComponent* Object, FString Delimeter, FString& OutName);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "Vertices Operations", Keywords = "vertex,vertices, locations, pivot, center, custom"), Category = "MeshOperations")
-    static void VerticesOperations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector> &OutAllVertices, TArray<FVector>& OutUniqueVertices);
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertex Locations", Keywords = "vertex,vertices, locations, get"), Category = "MeshOperations")
+    static void GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector>& OutAllVertices, TArray<FVector>& OutUniqueVertices);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "MovePivotToNewLocation", Keywords = "vertex,vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
+    static void MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, TArray<FVector> CurrentVertices, bool &IsSuccessful);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);
@@ -102,3 +105,11 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
 
 };
+
+/*
+DEPRECATED FUNCTION 1
+
+UFUNCTION(BlueprintCallable, meta = (DispayName = "Vertices Operations", Keywords = "vertex,vertices, locations, pivot, center, custom"), Category = "MeshOperations")
+static void VerticesOperations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector> &OutAllVertices, TArray<FVector>& OutUniqueVertices);
+
+*/

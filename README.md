@@ -1,6 +1,7 @@
 # MeshOperations
 
-- Vertex Operations (Get vertex locations in world space and change pivot locations if necessary) // FIX NEED FOR CHANGE PIVOT !
+- Get Vertex Locations (From FPositionVertexBuffer)
+- Move Pivot To New Location (with EditableMesh -> It will be converted to Dynamic Mesh from Geometry Scripting when UE5 is ready)
 
 - Add Scene Component with Name
 - Add Static Mesh Component with Name

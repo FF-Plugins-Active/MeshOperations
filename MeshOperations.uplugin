@@ -26,6 +26,10 @@
 			{
 				"Name": "ProceduralMeshComponent",
 				"Enabled": true
+			},
+			{
+				"Name": "EditableMesh",
+				"Enabled": true
 			}
 		]
 }
