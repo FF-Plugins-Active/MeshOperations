@@ -2,30 +2,35 @@
 
 #include "MeshOperationsBPLibrary.h"
 #include "Async/Async.h" 
+#include "Math/Vector.h"
 
-// Object Types.
+// Components
 #include "UObject/Object.h"
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "ProceduralMeshComponent.h"
-#include "KismetProceduralMeshLibrary.h"
 
-// Calculations.
-#include "Math/Vector.h"
+// Get Vertices Locations
+#include "Rendering/PositionVertexBuffer.h"
+#include "Runtime/RenderCore/Public/ShaderCore.h"
 
-// Unique Objects.
+// Pivot System
 #include "EditableMesh.h"
 #include "EditableMeshTypes.h"
 #include "EditableMeshFactory.h"
-#include "MeshDescription.h"                    //Pivot System.
-#include "MeshDescriptionBase.h"
-#include "Engine/StaticMesh.h"
+#include "MeshDescription.h"
 
-// Buffers.
-#include "StaticMeshResources.h"                //Pivot System.
-#include "StaticMeshAttributes.h"               //Pivot System.
-#include "Rendering/PositionVertexBuffer.h"     //Pivot System.
+/*
+#include "MeshDescriptionBase.h"
+#include "MeshDescriptionAdapter.h"
+#include "MeshAdapterTransforms.h"
+#include "MeshAttributes.h"
+
+#include "Engine/StaticMesh.h"
+#include "StaticMeshResources.h"
+#include "StaticMeshAttributes.h"
+*/
 
 #include "MeshOperations.h"
 
@@ -198,97 +203,6 @@ void UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, 
     }
     
     OutName = GeneratedName;
-}
-
-void UMeshOperationsBPLibrary::GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector>& OutAllVertices, TArray<FVector>& OutUniqueVertices)
-{
-    if (StaticMeshComponent != nullptr)
-    {
-        // Get PositionVertexBuffer at start.
-        FPositionVertexBuffer* PositionVertexBuffer = &StaticMeshComponent->GetStaticMesh()->GetRenderData()->LODResources[LODs].VertexBuffers.PositionVertexBuffer;
-        AllVerticesCount = PositionVertexBuffer->GetNumVertices();
-
-        // Get vertex positions from PositionVertexBuffer and convert it to world space from mesh space.
-        FVector VertexPosition;
-        TSet<FVector> UniqueVertices;
-
-        for (int32 VertexIndex = 0; VertexIndex < AllVerticesCount; VertexIndex++)
-        {
-            VertexPosition = StaticMeshComponent->GetComponentTransform().TransformPosition(PositionVertexBuffer->VertexPosition(VertexIndex));
-            OutAllVertices.Add(VertexPosition);
-            UniqueVertices.Add(VertexPosition);
-        }
-
-        // Output Pins
-        OutUniqueVertices = UniqueVertices.Array();
-        UniqueVerticesCount = UniqueVertices.Num();
-    }
-}
-
-void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, TArray<FVector> CurrentVertices, bool &IsSuccessful)
-{
-    if (ENGINE_MAJOR_VERSION == 4)
-    {
-        if (StaticMeshComponent != nullptr)
-        {
-            // Initial Variables.
-            UEditableMesh* EditableMesh;
-            EditableMesh = UEditableMeshFactory::MakeEditableMesh(StaticMeshComponent, LODs);
-            FVector CenterOriginal = StaticMeshComponent->Bounds.Origin;
-
-            FVector NewPivot;
-            switch (Pivot)
-            {
-            case None:
-                NewPivot;
-                break;
-
-            case Center:
-                NewPivot = StaticMeshComponent->Bounds.Origin;
-                break;
-
-            case Custom:
-                NewPivot = CustomPivot;
-                break;
-
-            default:
-                NewPivot = StaticMeshComponent->Bounds.Origin;
-                break;
-            }
-
-            FVertexToMove EachVertexToMove;
-            TArray<FVertexToMove> Array_VerticesToMove;
-            for (int32 VertexIndex = 0; VertexIndex < CurrentVertices.Num(); VertexIndex++)
-            {
-                EachVertexToMove.VertexID = FVertexID(VertexIndex);
-                EachVertexToMove.NewVertexPosition = CurrentVertices[VertexIndex] - NewPivot;
-                Array_VerticesToMove.Add(EachVertexToMove);
-            }
-
-            EditableMesh->MoveVertices(Array_VerticesToMove);
-            EditableMesh->Commit();
-            EditableMesh->RebuildRenderMesh();
-
-            // Add world offset to retain original world location.
-            StaticMeshComponent->AddWorldOffset(CenterOriginal - StaticMeshComponent->Bounds.Origin, false, nullptr, ETeleportType::None);
-
-            if (StaticMeshComponent->GetComponentLocation() == NewPivot)
-            {
-                IsSuccessful = true;
-            }
-
-            else
-            {
-                IsSuccessful = false;
-            }
-        }
-    }
-
-    else
-    {
-        IsSuccessful = false;
-    }
-    
 }
 
 void UMeshOperationsBPLibrary::OptimizeCenter(USceneComponent* AssetRoot)
@@ -473,24 +387,51 @@ void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap
     }
 }
 
+void UMeshOperationsBPLibrary::GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& VerticesCount, TArray<FVector>& VerticesLocations)
+{
+    if (StaticMeshComponent != nullptr)
+    {   
+        // Get PositionVertexBuffer at start.
+        FPositionVertexBuffer* PositionVertexBuffer = &StaticMeshComponent->GetStaticMesh()->GetRenderData()->LODResources[LODs].VertexBuffers.PositionVertexBuffer;
 
-/*
-DEPRECATED FUNCTION 1
+        // Get vertex positions from PositionVertexBuffer and convert it to world space from mesh space.
+        FVector VertexPosition;
 
-void UMeshOperationsBPLibrary::VerticesOperations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector>& OutAllVertices, TArray<FVector>& OutUniqueVertices)
-// We have "GetVertexLocations" in here.
-.
-.
-.
-
-    if (Pivot != PivotOperations::None)
+        for (uint32 VertexIndex = 0; VertexIndex < PositionVertexBuffer->GetNumVertices(); VertexIndex++)
         {
-            // Get original mesh center to calculate offset after moving vertices.
-            FVector CenterOriginal = StaticMeshComponent->Bounds.Origin;
+            VertexPosition = StaticMeshComponent->GetComponentTransform().TransformPosition(PositionVertexBuffer->VertexPosition(VertexIndex));
 
-            // Change new pivot destination.
+            if (VerticesLocations.Contains(VertexPosition) == false)
+            {
+                VerticesLocations.Add(VertexPosition);
+            }
+        }
+
+        // Output Pins
+        VerticesCount = VerticesLocations.Num();
+    }
+}
+
+void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful)
+{
+    if (ENGINE_MAJOR_VERSION == 4)
+    {
+        if (StaticMeshComponent != nullptr)
+        {
+            // Get original transform values to retain them.
+            FVector OriginalCenter = StaticMeshComponent->Bounds.Origin;
+            FRotator OriginalRotation = StaticMeshComponent->GetComponentRotation();
+
+            // Reset rotation to get pure (non-rotated) world locations of vertices.
+            FRotator ZeroRotation(0.0f, 0.0f, 0.0f);
+            StaticMeshComponent->SetWorldRotation(ZeroRotation, false, nullptr, ETeleportType::None);
+
+            // Get vertices of target static mesh at start.
+            int32 VerticesCount;
+            TArray<FVector> VerticesLocations;
+            UMeshOperationsBPLibrary::GetVertexLocations(StaticMeshComponent, LODs, VerticesCount, VerticesLocations);
+            
             FVector NewPivot;
-
             switch (Pivot)
             {
             case None:
@@ -506,27 +447,90 @@ void UMeshOperationsBPLibrary::VerticesOperations(UStaticMeshComponent* StaticMe
                 break;
 
             default:
-                NewPivot;
+                NewPivot = StaticMeshComponent->Bounds.Origin;
                 break;
             }
+            
+            // Start Pivot Operation
+            UEditableMesh* EditableMesh = UEditableMeshFactory::MakeEditableMesh(StaticMeshComponent, LODs);
 
-            // Get static mesh informations for move pivot process.
-            FMeshDescription* MeshDescription = StaticMeshComponent->GetStaticMesh()->GetMeshDescription(LODs);
-            FStaticMeshLODResources& StaticMeshLODResources = StaticMeshComponent->GetStaticMesh()->GetRenderData()->LODResources[LODs];
-
-            for (int32 VertexIndex = 0; VertexIndex < UniqueVerticesCount; VertexIndex++)
+            FVertexToMove EachVertexToMove;
+            TArray<FVertexToMove> Array_VerticesToMove;
+            for (int32 VertexIndex = 0; VertexIndex < VerticesLocations.Num(); VertexIndex++)
             {
-                MeshDescription->VertexAttributes().SetAttribute(FVertexID(VertexIndex), MeshAttribute::Vertex::Position, 0, UniqueVertices.Array()[VertexIndex] - NewPivot);
+                EachVertexToMove.VertexID = FVertexID(VertexIndex);
+                EachVertexToMove.NewVertexPosition = VerticesLocations[VertexIndex] - NewPivot;
+                Array_VerticesToMove.Add(EachVertexToMove);
             }
 
-            TVertexAttributesConstRef<FVector> NewVerticesLocations = MeshDescription->VertexAttributes().GetAttributesRef<FVector>(MeshAttribute::Vertex::Position);
+            EditableMesh->MoveVertices(Array_VerticesToMove);
+            EditableMesh->Commit();
+            EditableMesh->RebuildRenderMesh();
 
-            // Build static mesh again from mesh description.
-            StaticMeshComponent->GetStaticMesh()->BuildFromMeshDescription(*MeshDescription, StaticMeshLODResources);
-            StaticMeshComponent->GetStaticMesh()->Build(true); // We should not have this in packaged project.
-
-            // Offset mesh to retain its original world location.
-            FVector LocationDifference = StaticMeshComponent->GetComponentLocation(); //We will change this with StaticMeshComponent->Bounds.Origin after tangent and normals calculation.
-            StaticMeshComponent->AddWorldOffset(CenterOriginal - LocationDifference, false, nullptr, ETeleportType::None);
+            // Return object to its original transform.
+            StaticMeshComponent->AddWorldOffset(OriginalCenter - StaticMeshComponent->Bounds.Origin, false, nullptr, ETeleportType::None);
+            StaticMeshComponent->SetWorldRotation(OriginalRotation, false, nullptr, ETeleportType::None);
+            
+            IsSuccessful = true;
         }
+    }
+
+    else
+    {
+        IsSuccessful = false;
+    }
+
+}
+
+void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot)
+{
+    AsyncTask(ENamedThreads::GameThread, [DelegateMovePivot, RootComponent, LODs]()
+        {
+            FVector CustomPivot(0.f);
+            bool IsThisMoveSuccessful = true;
+            UStaticMeshComponent* ChildMeshComp = nullptr;
+            
+            TArray<USceneComponent*> ChildrenMeshComps;
+            RootComponent->GetChildrenComponents(true, ChildrenMeshComps);
+            
+            TArray<FVector> NewVertices;
+            for (int32 ChilIndex = 0; ChilIndex < ChildrenMeshComps.Num(); ChilIndex++)
+            {
+                if (ChildrenMeshComps[ChilIndex]->GetClass()->GetName() == TEXT("StaticMeshComponent"))
+                {
+                    ChildMeshComp = Cast<UStaticMeshComponent>(ChildrenMeshComps[ChilIndex]);
+                    UMeshOperationsBPLibrary::MovePivotToNewLocation(ChildMeshComp, LODs, PivotDestination::Center, CustomPivot, IsThisMoveSuccessful);
+                }
+            }
+
+            AsyncTask(ENamedThreads::GameThread, [DelegateMovePivot]()
+                {
+                    DelegateMovePivot.ExecuteIfBound(true);
+                }
+            );
+        }
+    );
+}
+
+
+/*
+void UMeshOperationsBPLibrary::MovePivotToZero(UStaticMeshComponent* StaticMeshComponent, int32 LODs)
+{
+    UStaticMesh* StaticMesh = StaticMeshComponent->GetStaticMesh();
+    
+    UStaticMesh::FCommitMeshDescriptionParams Params;
+    Params.bMarkPackageDirty = false;
+    Params.bUseHashAsGuid = true;
+    
+    FStaticMeshLODResources& StaticMeshLODResources = StaticMesh->GetRenderData()->LODResources[LODs];
+    FMeshDescription* MeshDescription = StaticMesh->GetMeshDescription(LODs);
+    FMeshDescriptionEditableTriangleMeshAdapter EditableMeshDescAdapter = MeshDescription;
+    
+    FTransform3d NewPivotTransform = FTransform3d::Identity();
+    MeshAdapterTransforms::ApplyTransform(EditableMeshDescAdapter, NewPivotTransform);
+
+    StaticMesh->CommitMeshDescription(LODs, Params);
+    StaticMesh->BuildFromMeshDescription(*MeshDescription, StaticMeshLODResources);
+    StaticMesh->Build(true);
+}
 */

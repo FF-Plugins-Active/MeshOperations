@@ -26,10 +26,15 @@ public class MeshOperations : ModuleRules
             {
                 // ... add other public dependencies that you statically link with here ...
 				"Core",
-                "ProceduralMeshComponent",
+				"ProceduralMeshComponent",
+				"RHI",						// GetVertexLocations (FPositionVertexBuffer)
+				"RenderCore",				// GetVertexLocations (FPositionVertexBuffer)
+				"EditableMesh",
 				"MeshDescription",
-				"EditableMesh"
-            }
+				//"GeometricObjects",
+				//"DynamicMesh",
+				//"ModelingComponents"
+			}
 			);
 			
 		PrivateDependencyModuleNames.AddRange(
@@ -39,8 +44,9 @@ public class MeshOperations : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"RHI",
-				"RenderCore"
+				//"StaticMeshDescription",
+				//"GeometryAlgorithms",
+				//"MeshConversion",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

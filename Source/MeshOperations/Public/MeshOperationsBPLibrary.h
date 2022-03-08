@@ -5,12 +5,12 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine.h"
 
-//Object Types.
+//Components.
 #include "UObject/Object.h"
 #include "Components/ActorComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "ProceduralMeshComponent.h"        // Add Proc Mesh Comp with Name
+#include "ProceduralMeshComponent.h"
 
 #include "MeshOperationsBPLibrary.generated.h"
 
@@ -33,7 +33,7 @@
 */
 
 UENUM()
-enum PivotOperations
+enum PivotDestination
 {
     None        UMETA(DisplayName = "None"),
     Center      UMETA(DisplayName = "Center"),
@@ -83,12 +83,6 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Object Name for Package", Keywords = "name,object,package"), Category = "MeshOperations")
     static void GetObjectNameForPackage(USceneComponent* Object, FString Delimeter, FString& OutName);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertex Locations", Keywords = "vertex,vertices, locations, get"), Category = "MeshOperations")
-    static void GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector>& OutAllVertices, TArray<FVector>& OutUniqueVertices);
-
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "MovePivotToNewLocation", Keywords = "vertex,vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
-    static void MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, TArray<FVector> CurrentVertices, bool &IsSuccessful);
-
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);
 
@@ -104,12 +98,17 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", Keywords = "record,transforms"), Category = "MeshOperations")
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
 
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertex Locations", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
+    static void GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& VerticesCount, TArray<FVector>& VerticesLocations);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "MovePivotToNewLocation", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
+    static void MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful);
+    
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Recursive Move Pivot To Center", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set, recursive"), Category = "MeshOperations")
+    static void RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot);
+
+    /*
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Move Pivot to Center Dataprep Type", Keywords = "vertex,vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
+    static void MovePivotToZero(UStaticMeshComponent* StaticMeshComponent, int32 LODs);
+    */
 };
-
-/*
-DEPRECATED FUNCTION 1
-
-UFUNCTION(BlueprintCallable, meta = (DispayName = "Vertices Operations", Keywords = "vertex,vertices, locations, pivot, center, custom"), Category = "MeshOperations")
-static void VerticesOperations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotOperations> Pivot, FVector CustomPivot, int32& AllVerticesCount, int32& UniqueVerticesCount, TArray<FVector> &OutAllVertices, TArray<FVector>& OutUniqueVertices);
-
-*/
