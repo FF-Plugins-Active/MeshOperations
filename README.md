@@ -16,7 +16,7 @@
 It can process all static meshes but it's not recursive. So, if there are more than one middle parent for a static mesh, it does not delete other ones.
 --------------------------------------------------------------------------------------------
 Expriment:
-PositionVertexBuffer requires gamethread for RHI reasons.
+- PositionVertexBuffer requires gamethread for RHI reasons.
 So we will convert it to GetNumberOfSections >For Loop > GetSectionFromStaticMesh
 If it and EditableMesh supports other threads, we will use it for RecursiveMethod
 
