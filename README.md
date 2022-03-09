@@ -25,6 +25,7 @@ Expriment:
 ROADMAP:
 - Async DeleteEmpotyRoots
 - Async DeleteEmptyParents
+- Get SectionSectionFromStaticMesh Helper
 
 NOTICE !
 - This plugins created for internal CAD based simulation projects.
