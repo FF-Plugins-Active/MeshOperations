@@ -16,14 +16,16 @@
 It can process all static meshes but it's not recursive. So, if there are more than one middle parent for a static mesh, it does not delete other ones.
 --------------------------------------------------------------------------------------------
 Expriment:
-- PositionVertexBuffer requires gamethread for RHI reasons.
-So we will convert it to GetNumberOfSections >For Loop > GetSectionFromStaticMesh
-If it and EditableMesh supports other threads, we will use it for RecursiveMethod
-
+- PositionVertexBuffer requires GameThread for RHI based reasons.
+- Right now, when we change Recursive's AsyncTask thread to any other thread than GameThread, editor crashes.
+- Because GetVertexLocations use PositionVertexBuffer.
+- So, we will convert PositionVertexBuffer to GetNumberOfSections > For Loop > GetSectionFromStaticMesh.
+- If it and EditableMesh support other threads, we will continue to use it.
 --------------------------------------------------------------------------------------------
 ROADMAP:
 - Async DeleteEmpotyRoots
 - Async DeleteEmptyParents
+- Get SectionSectionFromStaticMesh Helper
 
 NOTICE !
 - This plugins created for internal CAD based simulation projects.
