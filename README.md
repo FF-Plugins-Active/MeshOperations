@@ -25,5 +25,6 @@ ROADMAP:
 - Async DeleteEmptyParents
 
 NOTICE !
-- This plugins created for internal CAD based simulation projects. When UE5 is publised we will update it.
-Especially MovePivotToCenter (because it is one of the most important part for us.)
+- This plugins created for internal CAD based simulation projects.
+- When UE5 is publised we will update it. Especially MovePivotToCenter (Because it is one of the most important part for us.)
+- Also we can create new features when we saw Geometry Scripting and other native plugins.
