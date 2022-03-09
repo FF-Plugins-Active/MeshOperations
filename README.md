@@ -12,7 +12,8 @@
 - Get Object Name of Packaged Build
 --------------------------------------------------------------------------------------------
 - Delete Empty Roots
-- Delete Empty Parents
+- Delete Empty Parents (It will create New StaticMeshComp with -N suffix and attachs it to it's original grandparent.
+It can process all static meshes but it's not recursive. So, if there are more than one middle parent for a static mesh, it does not delete other ones.
 --------------------------------------------------------------------------------------------
 Expriment:
 PositionVertexBuffer requires gamethread for RHI reasons.
