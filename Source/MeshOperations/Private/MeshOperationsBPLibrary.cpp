@@ -10,6 +10,7 @@
 #include "Components/ActorComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "ProceduralMeshComponent.h"
+#include "KismetProceduralMeshLibrary.h"
 
 // Get Vertices Locations
 #include "Rendering/PositionVertexBuffer.h"
@@ -167,15 +168,11 @@ void UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, 
     TArray<FString> NameSections;
 
     FString ObjectName = Object->GetName();
-
     ObjectName.ParseIntoArray(NameSections, *Delimeter, true);
 
     if (WITH_EDITOR == true)
     {
-        int32 SectionCount = NameSections.Num();
-        int32 DeletedSection = SectionCount - 1;
-        NameSections.RemoveAt(DeletedSection);
-
+        NameSections.RemoveAt(NameSections.Num()-1);
         GeneratedName = FString::Join(NameSections, *Delimeter);
     }
 
@@ -183,9 +180,7 @@ void UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, 
     {
         for (int32 SectionID = 0; SectionID < 1; SectionID++)
         {
-            int32 SectionCount = NameSections.Num();
-            int32 DeletedID = SectionCount - 1;
-            NameSections.RemoveAt(DeletedID);
+            NameSections.RemoveAt(NameSections.Num() - 1 - SectionID);
         }
 
         GeneratedName = FString::Join(NameSections, *Delimeter);
@@ -499,4 +494,23 @@ void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootC
             );
         }
     );
+}
+
+void UMeshOperationsBPLibrary::CreateProceduralMeshFromStaticMesh(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<FVector>& OutUniqueVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
+{
+    TArray<FColor> VertexColor;
+    TSet<FVector> UniqueVertices;
+    for (int32 SectionIndex = 0; SectionIndex < StaticMeshComponent->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
+    {
+        UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(StaticMeshComponent->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
+        TargetPMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
+    }
+
+    UniqueVertices.Append(Vertices);
+    OutUniqueVertices = UniqueVertices.Array();
+
+    for (int32 MaterialIndex = 0; MaterialIndex < StaticMeshComponent->GetNumMaterials(); MaterialIndex++)
+    {
+        TargetPMC->SetMaterial(MaterialIndex, Material);
+    }
 }

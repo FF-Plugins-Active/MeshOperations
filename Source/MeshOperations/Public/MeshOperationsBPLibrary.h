@@ -106,5 +106,8 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Recursive Move Pivot To Center", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set, recursive"), Category = "MeshOperations")
     static void RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Create Procedural Mesh From Static Mesh", Keywords = "get, section, static, mesh,helper"), Category = "MeshOperations")
+    static void CreateProceduralMeshFromStaticMesh(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<FVector>& OutUniqueVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents);
     
 };
