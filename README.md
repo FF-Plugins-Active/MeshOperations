@@ -21,8 +21,8 @@ If it and EditableMesh supports other threads, we will use it for RecursiveMetho
 
 --------------------------------------------------------------------------------------------
 ROADMAP:
-Async DeleteEmpotyRoots
-Async DeleteEmptyParents
+- Async DeleteEmpotyRoots
+- Async DeleteEmptyParents
 
-This plugins created for internal CAD based simulation projects. When UE5 is publised we will update it.
+- This plugins created for internal CAD based simulation projects. When UE5 is publised we will update it.
 Especially MovePivotToCenter (because it is one of the most important part for us.)
