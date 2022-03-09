@@ -31,9 +31,6 @@ public class MeshOperations : ModuleRules
 				"RenderCore",				// GetVertexLocations (FPositionVertexBuffer)
 				"EditableMesh",
 				"MeshDescription",
-				//"GeometricObjects",
-				//"DynamicMesh",
-				//"ModelingComponents"
 			}
 			);
 			
@@ -44,9 +41,6 @@ public class MeshOperations : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				//"StaticMeshDescription",
-				//"GeometryAlgorithms",
-				//"MeshConversion",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

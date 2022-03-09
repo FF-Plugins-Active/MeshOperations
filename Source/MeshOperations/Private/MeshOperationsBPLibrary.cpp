@@ -21,17 +21,6 @@
 #include "EditableMeshFactory.h"
 #include "MeshDescription.h"
 
-/*
-#include "MeshDescriptionBase.h"
-#include "MeshDescriptionAdapter.h"
-#include "MeshAdapterTransforms.h"
-#include "MeshAttributes.h"
-
-#include "Engine/StaticMesh.h"
-#include "StaticMeshResources.h"
-#include "StaticMeshAttributes.h"
-*/
-
 #include "MeshOperations.h"
 
 UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -511,26 +500,3 @@ void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootC
         }
     );
 }
-
-
-/*
-void UMeshOperationsBPLibrary::MovePivotToZero(UStaticMeshComponent* StaticMeshComponent, int32 LODs)
-{
-    UStaticMesh* StaticMesh = StaticMeshComponent->GetStaticMesh();
-    
-    UStaticMesh::FCommitMeshDescriptionParams Params;
-    Params.bMarkPackageDirty = false;
-    Params.bUseHashAsGuid = true;
-    
-    FStaticMeshLODResources& StaticMeshLODResources = StaticMesh->GetRenderData()->LODResources[LODs];
-    FMeshDescription* MeshDescription = StaticMesh->GetMeshDescription(LODs);
-    FMeshDescriptionEditableTriangleMeshAdapter EditableMeshDescAdapter = MeshDescription;
-    
-    FTransform3d NewPivotTransform = FTransform3d::Identity();
-    MeshAdapterTransforms::ApplyTransform(EditableMeshDescAdapter, NewPivotTransform);
-
-    StaticMesh->CommitMeshDescription(LODs, Params);
-    StaticMesh->BuildFromMeshDescription(*MeshDescription, StaticMeshLODResources);
-    StaticMesh->Build(true);
-}
-*/
