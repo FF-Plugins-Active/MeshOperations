@@ -7,6 +7,7 @@
 - Add Scene Component with Name
 - Add Static Mesh Component with Name
 - Add Procedural Mesh Component with Name
+- Create Procedural Mesh from Static Mesh (Helper function)
 --------------------------------------------------------------------------------------------
 - Get Class Name
 - Get Object Name of Packaged Build
