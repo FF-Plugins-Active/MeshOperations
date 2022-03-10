@@ -48,13 +48,13 @@ struct FMeshProperties
 public:
 
     UPROPERTY(BlueprintReadWrite, Editanywhere)
-        UStaticMesh* Static_Mesh = nullptr;
+    UStaticMesh* Static_Mesh = nullptr;
 
     UPROPERTY(BlueprintReadWrite, Editanywhere)
-        USceneComponent* Grand_Parent = nullptr;
+    USceneComponent* Grand_Parent = nullptr;
 
     UPROPERTY(BlueprintReadWrite, Editanywhere)
-        FTransform World_Transform;
+    FTransform World_Transform;
 
 };
 

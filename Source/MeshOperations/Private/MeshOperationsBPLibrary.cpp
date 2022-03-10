@@ -1,8 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "MeshOperationsBPLibrary.h"
-#include "Async/Async.h" 
 #include "Math/Vector.h"
+
+// Async 
+#include "Async/Async.h" 
+#include "Async/IAsyncProgress.h"
 
 // Components
 #include "UObject/Object.h"
