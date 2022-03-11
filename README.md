@@ -13,21 +13,9 @@
 - Get Object Name of Packaged Build
 --------------------------------------------------------------------------------------------
 - Delete Empty Roots
-- Delete Empty Parents (It will create New StaticMeshComp with -N suffix and attachs it to it's original grandparent.
-It can process all static meshes but it's not recursive. So, if there are more than one middle parent for a static mesh, it does not delete other ones.
+- Delete Empty Parents Recursive (AC_Rename)
+- Rename Object (AC_Rename)
 --------------------------------------------------------------------------------------------
-Expriment:
-- PositionVertexBuffer requires GameThread for RHI based reasons.
-- Right now, when we change Recursive's AsyncTask thread to any other thread than GameThread, editor crashes.
-- Because GetVertexLocations use PositionVertexBuffer.
-- So, we will convert PositionVertexBuffer to GetNumberOfSections > For Loop > GetSectionFromStaticMesh.
-- If it and EditableMesh support other threads, we will continue to use it.
---------------------------------------------------------------------------------------------
-ROADMAP:
-- Async DeleteEmpotyRoots
-- Async DeleteEmptyParents
-- Get SectionSectionFromStaticMesh Helper
-
 NOTICE !
 - This plugins created for internal CAD based simulation projects.
 - When UE5 is publised we will update it. Especially MovePivotToCenter (Because it is one of the most important part for us.)

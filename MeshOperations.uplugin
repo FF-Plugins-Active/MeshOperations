@@ -21,15 +21,14 @@
 			"LoadingPhase": "PreLoadingScreen"
 		}
 	],
-	"Plugins": 
-		[
-			{
-				"Name": "ProceduralMeshComponent",
-				"Enabled": true
-			},
-			{
-				"Name": "EditableMesh",
-				"Enabled": true
-			}
-		]
+	"Plugins": [
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
+		},
+		{
+			"Name": "EditableMesh",
+			"Enabled": true
+		}
+	]
 }

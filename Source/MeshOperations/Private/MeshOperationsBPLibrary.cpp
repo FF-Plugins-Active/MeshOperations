@@ -3,11 +3,11 @@
 #include "MeshOperationsBPLibrary.h"
 #include "Math/Vector.h"
 
-// Async 
+// Async Functions.
 #include "Async/Async.h" 
 #include "Async/IAsyncProgress.h"
 
-// Components
+// Components.
 #include "UObject/Object.h"
 #include "Components/SceneComponent.h"
 #include "Components/ActorComponent.h"
@@ -15,11 +15,11 @@
 #include "ProceduralMeshComponent.h"
 #include "KismetProceduralMeshLibrary.h"
 
-// Get Vertices Locations
+// Get Vertices Locations.
 #include "Rendering/PositionVertexBuffer.h"
 #include "Runtime/RenderCore/Public/ShaderCore.h"
 
-// Pivot System
+// Pivot System.
 #include "EditableMesh.h"
 #include "EditableMeshTypes.h"
 #include "EditableMeshFactory.h"
@@ -268,88 +268,6 @@ void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)
     }
 }
 
-void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, int32& OutProcessed, TArray<USceneComponent*>& OutChildren)
-{
-    int32 Processed = 0;
-
-    TArray <USceneComponent*> Children; // Required construction of array variable for children components.
-    AssetRoot->GetChildrenComponents(true, Children);
-
-    // MAP Variable.
-    TMap<FString, FMeshProperties> MAP_Properties;
-
-    for (int32 ChildID = 0; ChildID < Children.Num(); ChildID++)
-    {
-        if (Children[ChildID]->GetClass()->GetName() == TEXT("StaticMeshComponent"))
-        {
-            // Referance of each child component.
-            UStaticMeshComponent* LOC_SM_Comp = Cast<UStaticMeshComponent>(Children[ChildID]);
-
-            int32 SiblingsCount = LOC_SM_Comp->GetAttachParent()->GetNumChildrenComponents();
-
-            if (SiblingsCount == 1)
-            {
-                // Structure Variable
-                FMeshProperties STR_Properties;
-
-                // MAP Key Variable.
-                FString Parent_Name = LOC_SM_Comp->GetAttachParent()->GetName();
-
-                // MAP Value Variables.
-                STR_Properties.Static_Mesh = LOC_SM_Comp->GetStaticMesh();
-                STR_Properties.Grand_Parent = LOC_SM_Comp->GetAttachParent()->GetAttachParent();
-                STR_Properties.World_Transform = LOC_SM_Comp->GetComponentTransform();
-
-                // Add key and value to MAP.
-                MAP_Properties.Add(Parent_Name, STR_Properties);
-
-                // Destroy parent and object after that.
-                LOC_SM_Comp->GetAttachParent()->DestroyComponent(true);
-                LOC_SM_Comp->DestroyComponent(true);
-            }
-        }
-    }
-
-    TArray<FString> Array_Names; // Required construction of array variable for MAP_Properties' key array strings.
-    MAP_Properties.GetKeys(Array_Names);
-
-    for (int32 NameID = 0; NameID < Array_Names.Num(); NameID++)
-    {
-        // Required local variables for new static mesh component.
-        AActor* Outer = AssetRoot->GetOwner();
-
-        // If a static mesh component uses same name and same static mesh after destroying it, it will give error. So we added -N name suffix.
-        FString NameString = Array_Names[NameID] + TEXT("-N");
-        FName New_SMC_Name = FName(*NameString);
-
-        FTransform RelativeTransform;
-        bool Is_SMC_Created = true;
-        FName Out_SMC_Name;
-        UStaticMeshComponent* Out_SMC;
-
-        // Create new static mesh component.
-        AddStaticMeshCompWithName(New_SMC_Name, Outer, EComponentMobility::Movable, EAttachmentRule::KeepWorld, true, RelativeTransform, Is_SMC_Created, Out_SMC_Name, Out_SMC);
-
-        // Get each property variable.
-        FMeshProperties* EachProperty = MAP_Properties.Find(Array_Names[NameID]);
-
-        // Set properties of each static mesh.
-        Out_SMC->SetStaticMesh(EachProperty->Static_Mesh);
-        Out_SMC->AttachToComponent(EachProperty->Grand_Parent, FAttachmentTransformRules::KeepWorldTransform, NAME_None);
-        Out_SMC->SetWorldTransform(EachProperty->World_Transform);
-
-        // Count processed items.
-        Processed = Processed + 1;
-    }
-
-    // Out children components array variable.
-    AssetRoot->GetChildrenComponents(true, Children);
-    OutChildren = Children;
-
-    // Show processed static mesh components.
-    OutProcessed = Processed;
-}
-
 void UMeshOperationsBPLibrary::OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset)
 {
     FVector Origin;
@@ -499,7 +417,7 @@ void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootC
     );
 }
 
-void UMeshOperationsBPLibrary::CreateProceduralMeshFromStaticMesh(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<FVector>& OutUniqueVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
+void UMeshOperationsBPLibrary::CreateProcMeshFromSM(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
 {
     TArray<FColor> VertexColor;
     TSet<FVector> UniqueVertices;
@@ -508,9 +426,6 @@ void UMeshOperationsBPLibrary::CreateProceduralMeshFromStaticMesh(UStaticMeshCom
         UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(StaticMeshComponent->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
         TargetPMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
     }
-
-    UniqueVertices.Append(Vertices);
-    OutUniqueVertices = UniqueVertices.Array();
 
     for (int32 MaterialIndex = 0; MaterialIndex < StaticMeshComponent->GetNumMaterials(); MaterialIndex++)
     {

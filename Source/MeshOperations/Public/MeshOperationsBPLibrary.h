@@ -40,24 +40,6 @@ enum PivotDestination
     Custom      UMETA(DisplayName = "Custom"),
 };
 
-USTRUCT(BlueprintType)
-struct FMeshProperties
-{
-    GENERATED_USTRUCT_BODY()
-
-public:
-
-    UPROPERTY(BlueprintReadWrite, Editanywhere)
-    UStaticMesh* Static_Mesh = nullptr;
-
-    UPROPERTY(BlueprintReadWrite, Editanywhere)
-    USceneComponent* Grand_Parent = nullptr;
-
-    UPROPERTY(BlueprintReadWrite, Editanywhere)
-    FTransform World_Transform;
-
-};
-
 UDELEGATE(BlueprintAuthorityOnly)
 DECLARE_DYNAMIC_DELEGATE_OneParam(FCenterPivot, bool, IsSuccessfull);
 
@@ -66,11 +48,9 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
 
-    //Trigger Static Mesh Component Creation With Name
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddStaticMeshCompWithName", Keywords = "static,mesh,component,name"), Category = "MeshOperations")
     static void AddStaticMeshCompWithName(const FName In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC);
 
-    //Trigger Scene Component Creation With Name
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddSceneCompWithName", Keywords = "scene,component,mesh,name"), Category = "MeshOperations")
     static void AddSceneCompWithName(const FName In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC);
 
@@ -86,9 +66,6 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Parents", Keywords = "optimize,hierarchy,empty,parent,parents"), Category = "MeshOperations")
-    static void DeleteEmptyParents(USceneComponent* AssetRoot, int32& OutProcessed, TArray<USceneComponent*>& OutChildren);
-
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeCenter", Keywords = "optimize,move,components,center"), Category = "MeshOperations")
     static void OptimizeCenter(USceneComponent* AssetRoot);
 
@@ -98,16 +75,16 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", Keywords = "record,transforms"), Category = "MeshOperations")
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertex Locations", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertex Locations", ToolTip = "It uses PositionalVertexBuffer", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
     static void GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& VerticesCount, TArray<FVector>& VerticesLocations);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "MovePivotToNewLocation", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "MovePivotToNewLocation", ToolTip = "It uses PositionVertexBuffer and EditableMesh", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
     static void MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful);
     
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Recursive Move Pivot To Center", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set, recursive"), Category = "MeshOperations")
     static void RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Create Procedural Mesh From Static Mesh", Keywords = "get, section, static, mesh,helper"), Category = "MeshOperations")
-    static void CreateProceduralMeshFromStaticMesh(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<FVector>& OutUniqueVertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents);
+    static void CreateProcMeshFromSM(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents);
     
 };
