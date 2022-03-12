@@ -39,7 +39,7 @@ ROADMAP:
 
 PURPOSE:
 - This plugin created for "our" startup's internal "CAD" projects !
-- So, we will update it with "our needs" and rightnow we have other project priorities.
+- So, we will update it with "our needs" and right now we have other project priorities.
 
 UPDATES:
 - UE5 doesn't have "EditableMesh" native plugin. It has DynamicMesh, Geometry Scripting and Geometry Process plugins.
