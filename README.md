@@ -18,7 +18,11 @@
 - Delete Empty Parents Recursive (AC_Rename)
 - Rename Object (AC_Rename)
 --------------------------------------------------------------------------------------------
-USED PLUGINS and DEPENDENCIES
+STATE:
+- Beta but you can use it with projects.
+- Look at "Issues" before using it !
+
+USED PLUGINS and DEPENDENCIES:
 - Procedural Mesh Component
 - KismetProceduralMeshLibrary
 - EditableMesh
@@ -29,7 +33,7 @@ USED PLUGINS and DEPENDENCIES
 - RenderCore
 - Kismet/KismetMathLibrary
 - Math/Vector
---------------------------------------------------------------------------------------------
+
 ROADMAP:
 - BUGFIX: Correct static mesh offset calculations for retaining original transforms. (Move Pivot Functions)
 
@@ -43,7 +47,7 @@ UPDATES:
 
 PLATFORM SUPPORT:
 - We didn't use any 3rd party plugins.
-- So, it should work on any platform other than HTML5 (Deprecated at 4.24). But some plugins (for example Datasmith Runtime and USDZ Runtime) don't support other than Windows. If that happens, plugin don't work and we can't help.
+- So, it should work on any platform other than HTML5 (Deprecated at 4.24). But some plugins (for example Datasmith Runtime and USDZ Runtime) don't support other than Windows. If that happens, plugin won't work and we can't help.
 - Our startup's primary operating system is Microsoft Windows and secondary one is Android (Oculus Quest 2). So we can't help for other than these.  
 
 CONTRIBUTIONS:
