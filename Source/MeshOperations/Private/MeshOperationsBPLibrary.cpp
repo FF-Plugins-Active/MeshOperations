@@ -397,7 +397,7 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Targ
             switch (Pivot)
             {
             case None:
-                NewPivot;
+                NewPivot = FVector(0, 0, 0);
                 break;
 
             case Center:
