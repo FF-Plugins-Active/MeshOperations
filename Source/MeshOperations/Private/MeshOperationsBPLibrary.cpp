@@ -1,7 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "MeshOperationsBPLibrary.h"
+
+// Math Functions.
 #include "Math/Vector.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Async Functions.
 #include "Async/Async.h" 
@@ -15,15 +18,15 @@
 #include "ProceduralMeshComponent.h"
 #include "KismetProceduralMeshLibrary.h"
 
-// Get Vertices Locations.
+// Get Vertices Locations 1.
 #include "Rendering/PositionVertexBuffer.h"
 #include "Runtime/RenderCore/Public/ShaderCore.h"
 
-// Pivot System.
+// Vertex and Pivot Functions.
 #include "EditableMesh.h"
-#include "EditableMeshTypes.h"
 #include "EditableMeshFactory.h"
 #include "MeshDescription.h"
+#include "StaticMeshAttributes.h" // Set Vertex Location
 
 #include "MeshOperations.h"
 
@@ -292,49 +295,103 @@ void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap
     }
 }
 
-void UMeshOperationsBPLibrary::GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& VerticesCount, TArray<FVector>& VerticesLocations)
-{
-    if (StaticMeshComponent != nullptr)
+void UMeshOperationsBPLibrary::GetVerticesLocations_1(UStaticMeshComponent* Target_SMC, int32 LODs, TArray<FVector>& AllVertices, TArray<FVector>& UniqueVertices)
+{    
+    if (Target_SMC != nullptr)
     {   
         // Get PositionVertexBuffer at start.
-        FPositionVertexBuffer* PositionVertexBuffer = &StaticMeshComponent->GetStaticMesh()->GetRenderData()->LODResources[LODs].VertexBuffers.PositionVertexBuffer;
+        FPositionVertexBuffer* PositionVertexBuffer = &Target_SMC->GetStaticMesh()->GetRenderData()->LODResources[LODs].VertexBuffers.PositionVertexBuffer;
 
         // Get vertex positions from PositionVertexBuffer and convert it to world space from mesh space.
-        FVector VertexPosition;
+        FVector EachVertex;
 
         for (uint32 VertexIndex = 0; VertexIndex < PositionVertexBuffer->GetNumVertices(); VertexIndex++)
         {
-            VertexPosition = StaticMeshComponent->GetComponentTransform().TransformPosition(PositionVertexBuffer->VertexPosition(VertexIndex));
+            EachVertex = Target_SMC->GetComponentTransform().TransformPosition(PositionVertexBuffer->VertexPosition(VertexIndex));
+            AllVertices.Add(EachVertex);
 
-            if (VerticesLocations.Contains(VertexPosition) == false)
+            if (UniqueVertices.Contains(EachVertex) == false)
             {
-                VerticesLocations.Add(VertexPosition);
+                UniqueVertices.Add(EachVertex);
             }
         }
-
-        // Output Pins
-        VerticesCount = VerticesLocations.Num();
     }
 }
 
-void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful)
+void UMeshOperationsBPLibrary::GetVerticesLocations_2(UEditableMesh* TargetEditableMesh, int32 LODs, TArray<FVector>& VerticesLocations)
+{
+    if (TargetEditableMesh != nullptr)
+    {
+        const TVertexAttributesRef<FVector> Vertices = TargetEditableMesh->GetMeshDescription()->VertexAttributes().GetAttributesRef<FVector>(MeshAttribute::Vertex::Position);
+        for (int32 VertexIndex = 0; VertexIndex < Vertices.GetNumElements(); VertexIndex++)
+        {
+            FVertexID EachVertexID = FVertexID(VertexIndex);
+            VerticesLocations.Add(Vertices.Get(EachVertexID));
+        }
+    }
+}
+
+void UMeshOperationsBPLibrary::SetVertexLocation(UEditableMesh* TargetEditableMesh, FVertexToMove TargetVertexToMove)
+{
+    // Initial Variables.
+    //FMeshDescription* GetMeshDescription();
+    
+    TSet<FPolygonID> PolygonsPendingNewTangentBasis;
+    TSet<FPolygonID> PolygonsPendingTriangulation;
+
+    static TSet<FPolygonID> VertexConnectedPolygons;
+    VertexConnectedPolygons.Reset();
+
+    static TArray<FAttributesForVertex> VertexAttributesToSet;
+    VertexAttributesToSet.Reset();
+
+    const TVertexAttributesRef<FVector> VertexPositions = TargetEditableMesh->GetMeshDescription()->VertexAttributes().GetAttributesRef<FVector>(MeshAttribute::Vertex::Position);
+
+    const FVector CurrentPosition = VertexPositions[TargetVertexToMove.VertexID];
+
+    if (TargetVertexToMove.NewVertexPosition != CurrentPosition)
+    {
+        VertexAttributesToSet.Emplace();
+        FAttributesForVertex& AttributesForVertex = VertexAttributesToSet.Last();
+
+
+        AttributesForVertex.VertexID = TargetVertexToMove.VertexID;
+        AttributesForVertex.VertexAttributes.Attributes.Emplace(MeshAttribute::Vertex::Position, 0, FMeshElementAttributeValue(TargetVertexToMove.NewVertexPosition));
+
+        // All of the polygons that share this vertex will need new normals
+        static TArray<FPolygonID> ConnectedPolygonRefs;
+        TargetEditableMesh->GetVertexConnectedPolygons(TargetVertexToMove.VertexID, /* Out */ ConnectedPolygonRefs);
+        VertexConnectedPolygons.Append(ConnectedPolygonRefs);
+    }
+
+    TargetEditableMesh->SetVerticesAttributes(VertexAttributesToSet);
+
+    // Mark all polygons connected to the vertex as requiring a new tangent basis and retriangulation
+    // Everything needs to be retriangulated because convexity may have changed
+    PolygonsPendingNewTangentBasis.Append(VertexConnectedPolygons);
+    PolygonsPendingTriangulation.Append(VertexConnectedPolygons);
+}
+
+void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Target_SMC, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful)
 {
     if (ENGINE_MAJOR_VERSION == 4)
     {
-        if (StaticMeshComponent != nullptr)
+        if (Target_SMC != nullptr)
         {
             // Get original transform values to retain them.
-            FVector OriginalCenter = StaticMeshComponent->Bounds.Origin;
-            FRotator OriginalRotation = StaticMeshComponent->GetComponentRotation();
+            FVector OriginalCenter = Target_SMC->Bounds.Origin;
+            FRotator OriginalRotation = Target_SMC->GetComponentRotation();
 
             // Reset rotation to get pure (non-rotated) world locations of vertices.
             FRotator ZeroRotation(0.0f, 0.0f, 0.0f);
-            StaticMeshComponent->SetWorldRotation(ZeroRotation, false, nullptr, ETeleportType::None);
+            Target_SMC->SetWorldRotation(ZeroRotation, false, nullptr, ETeleportType::None);
+
+            // Start Pivot Operation
+            UEditableMesh* TargetEditableMesh = UEditableMeshFactory::MakeEditableMesh(Target_SMC, LODs);
 
             // Get vertices of target static mesh at start.
-            int32 VerticesCount;
             TArray<FVector> VerticesLocations;
-            UMeshOperationsBPLibrary::GetVertexLocations(StaticMeshComponent, LODs, VerticesCount, VerticesLocations);
+            UMeshOperationsBPLibrary::GetVerticesLocations_2(TargetEditableMesh, LODs, VerticesLocations);
             
             FVector NewPivot;
             switch (Pivot)
@@ -344,7 +401,7 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Stat
                 break;
 
             case Center:
-                NewPivot = StaticMeshComponent->Bounds.Origin;
+                NewPivot = Target_SMC->Bounds.Origin;
                 break;
 
             case Custom:
@@ -352,30 +409,25 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Stat
                 break;
 
             default:
-                NewPivot = StaticMeshComponent->Bounds.Origin;
+                NewPivot = Target_SMC->Bounds.Origin;
                 break;
             }
-            
-            // Start Pivot Operation
-            UEditableMesh* EditableMesh = UEditableMeshFactory::MakeEditableMesh(StaticMeshComponent, LODs);
 
-            FVertexToMove EachVertexToMove;
-            TArray<FVertexToMove> Array_VerticesToMove;
             for (int32 VertexIndex = 0; VertexIndex < VerticesLocations.Num(); VertexIndex++)
             {
-                EachVertexToMove.VertexID = FVertexID(VertexIndex);
-                EachVertexToMove.NewVertexPosition = VerticesLocations[VertexIndex] - NewPivot;
-                Array_VerticesToMove.Add(EachVertexToMove);
+                FVertexToMove EachVTM;
+                EachVTM.VertexID = FVertexID(VertexIndex);
+                EachVTM.NewVertexPosition = VerticesLocations[VertexIndex] - NewPivot;
+                UMeshOperationsBPLibrary::SetVertexLocation(TargetEditableMesh, EachVTM);
             }
 
-            EditableMesh->MoveVertices(Array_VerticesToMove);
-            EditableMesh->Commit();
-            EditableMesh->RebuildRenderMesh();
+            TargetEditableMesh->Commit();
+            TargetEditableMesh->RebuildRenderMesh();
 
             // Return object to its original transform.
-            StaticMeshComponent->AddWorldOffset(OriginalCenter - StaticMeshComponent->Bounds.Origin, false, nullptr, ETeleportType::None);
-            StaticMeshComponent->SetWorldRotation(OriginalRotation, false, nullptr, ETeleportType::None);
-            
+            Target_SMC->AddWorldOffset(OriginalCenter - Target_SMC->Bounds.Origin, false, nullptr, ETeleportType::None);
+            Target_SMC->SetWorldRotation(OriginalRotation, false, nullptr, ETeleportType::None);
+
             IsSuccessful = true;
         }
     }
@@ -389,7 +441,7 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Stat
 
 void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot)
 {
-    AsyncTask(ENamedThreads::GameThread, [DelegateMovePivot, RootComponent, LODs]()
+    AsyncTask(ENamedThreads::AnyHiPriThreadHiPriTask, [DelegateMovePivot, RootComponent, LODs]()
         {
             FVector CustomPivot(0.f);
             bool IsThisMoveSuccessful = true;
@@ -417,18 +469,18 @@ void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootC
     );
 }
 
-void UMeshOperationsBPLibrary::CreateProcMeshFromSM(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
+void UMeshOperationsBPLibrary::CreatePMFromSM(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
 {
     TArray<FColor> VertexColor;
     TSet<FVector> UniqueVertices;
-    for (int32 SectionIndex = 0; SectionIndex < StaticMeshComponent->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
+    for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
     {
-        UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(StaticMeshComponent->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
-        TargetPMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
+        UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
+        Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
     }
 
-    for (int32 MaterialIndex = 0; MaterialIndex < StaticMeshComponent->GetNumMaterials(); MaterialIndex++)
+    for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
     {
-        TargetPMC->SetMaterial(MaterialIndex, Material);
+        Target_PMC->SetMaterial(MaterialIndex, Material);
     }
 }

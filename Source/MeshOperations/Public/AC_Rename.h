@@ -15,25 +15,6 @@
 UDELEGATE(BlueprintAuthorityOnly)
 DECLARE_DYNAMIC_DELEGATE_OneParam(FDeleteParents, bool, IsSuccessed);
 
-
-USTRUCT(BlueprintType)
-struct FMeshProperties
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-
-	UPROPERTY(BlueprintReadWrite, Editanywhere)
-	UStaticMesh* Static_Mesh = nullptr;
-
-	UPROPERTY(BlueprintReadWrite, Editanywhere)
-	USceneComponent* Grand_Parent = nullptr;
-
-	UPROPERTY(BlueprintReadWrite, Editanywhere)
-	FTransform World_Transform;
-
-};
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MESHOPERATIONS_API UAC_Rename : public UActorComponent
 {

@@ -12,6 +12,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "ProceduralMeshComponent.h"
 
+// Vertices and Pivot Functions
+#include "EditableMesh.h"
+
 #include "MeshOperationsBPLibrary.generated.h"
 
 /* 
@@ -72,19 +75,25 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "OptimizeHeight", Keywords = "optimize,height"), Category = "MeshOperations")
     static void OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", Keywords = "record,transforms"), Category = "MeshOperations")
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "RecordTransforms", ToolTip = "It should be attached to a MAP. Because we used local variable.", Keywords = "record,transforms"), Category = "MeshOperations")
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertex Locations", ToolTip = "It uses PositionalVertexBuffer", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
-    static void GetVertexLocations(UStaticMeshComponent* StaticMeshComponent, int32 LODs, int32& VerticesCount, TArray<FVector>& VerticesLocations);
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertices Locations 1", ToolTip = "It uses PositionalVertexBuffer. It gives correct world positions but don't use it with EditableMesh move vertices. Use it with ProcMesh or vertex snaping.", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
+    static void GetVerticesLocations_1(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TArray<FVector>& AllVertices, TArray<FVector>& UniqueVertices);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertices Locations 2", ToolTip = "It uses MeshDescription->VertexAttributes. It created specifically for vertices movements. Also you can use it with vertex snaping, too.", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
+    static void GetVerticesLocations_2(UEditableMesh* EditableMesh, int32 LODs, TArray<FVector>& VerticesLocations);
+
+    UFUNCTION(BlueprintCallable, meta = (DispayName = "Set Vertex Location", ToolTip = "It uses same algorithm from EditableMesh->MoveVertices but we removed array and for loop. Because we didn't want two for loop for same operation.", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
+    static void SetVertexLocation(UEditableMesh* TargetEditableMesh, FVertexToMove TargetVertexToMove);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "MovePivotToNewLocation", ToolTip = "It uses PositionVertexBuffer and EditableMesh", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
-    static void MovePivotToNewLocation(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful);
+    static void MovePivotToNewLocation(UStaticMeshComponent* Target_SMC, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful);
     
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Recursive Move Pivot To Center", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set, recursive"), Category = "MeshOperations")
     static void RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Create Procedural Mesh From Static Mesh", Keywords = "get, section, static, mesh,helper"), Category = "MeshOperations")
-    static void CreateProcMeshFromSM(UStaticMeshComponent* StaticMeshComponent, int32 LODs, UProceduralMeshComponent* TargetPMC, UMaterial* Material, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents);
+    static void CreatePMFromSM(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents);
     
 };
