@@ -14,6 +14,9 @@
 - Get Class Name
 - Get Object Name of Packaged Build
 --------------------------------------------------------------------------------------------
+- Optimize Assembly Center
+- Optimize Assembly Height
+- Record Transorms
 - Delete Empty Roots
 - Delete Empty Parents Recursive (AC_Rename)
 - Rename Object (AC_Rename)
