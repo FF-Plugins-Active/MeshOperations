@@ -52,13 +52,13 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
 	GENERATED_UCLASS_BODY()
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddStaticMeshCompWithName", Keywords = "static,mesh,component,name"), Category = "MeshOperations")
-    static void AddStaticMeshCompWithName(const FName In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC);
+    static void AddStaticMeshCompWithName(const FString In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddSceneCompWithName", Keywords = "scene,component,mesh,name"), Category = "MeshOperations")
-    static void AddSceneCompWithName(const FName In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC);
+    static void AddSceneCompWithName(const FString In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddProcMeshCompWithName", Keywords = "procedural,mesh,component,name"), Category = "MeshOperations")
-    static void AddProcMeshCompWithName(const FName In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC);
+    static void AddProcMeshCompWithName(const FString In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC);
 
     UFUNCTION(BlueprintPure, meta = (DispayName = "GetClassName", Keywords = "name,class"), Category = "MeshOperations")
     static FString GetClassName(const UObject* Object);
@@ -79,10 +79,10 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static void RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertices Locations 1", ToolTip = "It uses PositionalVertexBuffer. It gives correct world positions but don't use it with EditableMesh move vertices. Use it with ProcMesh or vertex snaping.", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
-    static void GetVerticesLocations_1(UStaticMeshComponent* StaticMeshComponent, int32 LODs, TArray<FVector>& AllVertices, TArray<FVector>& UniqueVertices);
+    static void GetVerticesLocations_1(UStaticMeshComponent* Target_SMC, int32 LODs, TArray<FVector>& AllVertices, TArray<FVector>& UniqueVertices);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Get Vertices Locations 2", ToolTip = "It uses MeshDescription->VertexAttributes. It created specifically for vertices movements. Also you can use it with vertex snaping, too.", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
-    static void GetVerticesLocations_2(UEditableMesh* EditableMesh, int32 LODs, TArray<FVector>& VerticesLocations);
+    static void GetVerticesLocations_2(UStaticMeshComponent* Target_SMC, int32 LODs, TArray<FVector>& VerticesLocations);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Set Vertex Location", ToolTip = "It uses same algorithm from EditableMesh->MoveVertices but we removed array and for loop. Because we didn't want two for loop for same operation.", Keywords = "vertex, vertices, locations, get"), Category = "MeshOperations")
     static void SetVertexLocation(UEditableMesh* TargetEditableMesh, FVertexToMove TargetVertexToMove);

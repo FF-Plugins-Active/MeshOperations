@@ -35,12 +35,23 @@ UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& Obj
 
 }
 
-void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FName In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC)
+void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FString In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC)
 {
     if (SMC_Outer != NULL)
     {
+        FName SMC_Name;
+        if (In_SMC_Name.IsEmpty() == true)
+        {
+            SMC_Name = NAME_None;
+        }
+
+        else
+        {
+            SMC_Name = *In_SMC_Name;
+        }
+        
         //Static Mesh Component Creation.
-        UStaticMeshComponent* StaticMeshComp = NewObject<UStaticMeshComponent>(SMC_Outer, In_SMC_Name);
+        UStaticMeshComponent* StaticMeshComp = NewObject<UStaticMeshComponent>(SMC_Outer, SMC_Name);
 
         if (StaticMeshComp != nullptr)
         {
@@ -64,8 +75,8 @@ void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FName In_SMC_Name
 
             //Output Pins.
             Out_SMC = StaticMeshComp;
-            Out_SMC_Name = In_SMC_Name;
-            Is_SMC_Created = true;
+            Out_SMC_Name = SMC_Name;
+            Is_SMC_Created = StaticMeshComp->IsValidLowLevel();
         }
     }
 
@@ -78,12 +89,23 @@ void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FName In_SMC_Name
     }
 }
 
-void UMeshOperationsBPLibrary::AddSceneCompWithName(const FName In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC)
+void UMeshOperationsBPLibrary::AddSceneCompWithName(const FString In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC)
 {
     if (SC_Outer != NULL)
     {
+        FName SC_Name;
+        if (In_SC_Name.IsEmpty() == true)
+        {
+           SC_Name = NAME_None;
+        }
+
+        else
+        {
+            SC_Name = *In_SC_Name;
+        }
+
         //Scene Component Creation.
-        USceneComponent* SceneComp = NewObject<USceneComponent>(SC_Outer, In_SC_Name);
+        USceneComponent* SceneComp = NewObject<USceneComponent>(SC_Outer, SC_Name);
 
         if (SceneComp != nullptr)
         {
@@ -104,8 +126,8 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(const FName In_SC_Name, AAct
 
             //Output Pins.
             Out_SC = SceneComp;
-            Out_SC_Name = In_SC_Name;
-            Is_SC_Created = true;
+            Out_SC_Name = SC_Name;
+            Is_SC_Created = SceneComp->IsValidLowLevel();
         }
     }
 
@@ -118,12 +140,23 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(const FName In_SC_Name, AAct
     }
 }
 
-void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FName In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC)
+void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FString In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC)
 {
     if (PMC_Outer != NULL)
     {
+        FName PMC_Name; 
+        if (In_PMC_Name.IsEmpty() == true)
+        {
+            PMC_Name = NAME_None;
+        }
+
+        else
+        {
+            PMC_Name = *In_PMC_Name;
+        }
+        
         //Procedural Mesh Component Creation.
-        UProceduralMeshComponent* ProcMeshComp = NewObject<UProceduralMeshComponent>(PMC_Outer, In_PMC_Name);
+        UProceduralMeshComponent* ProcMeshComp = NewObject<UProceduralMeshComponent>(PMC_Outer, PMC_Name);
 
         if (ProcMeshComp != nullptr)
         {
@@ -147,8 +180,8 @@ void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FName In_PMC_Name, 
 
             //Output Pins
             Out_PMC = ProcMeshComp;
-            Out_PMC_Name = In_PMC_Name;
-            Is_PMC_Created = true;
+            Out_PMC_Name = PMC_Name;
+            Is_PMC_Created = ProcMeshComp->IsValidLowLevel();
         }
     }
 
@@ -318,15 +351,17 @@ void UMeshOperationsBPLibrary::GetVerticesLocations_1(UStaticMeshComponent* Targ
     }
 }
 
-void UMeshOperationsBPLibrary::GetVerticesLocations_2(UEditableMesh* TargetEditableMesh, int32 LODs, TArray<FVector>& VerticesLocations)
+void UMeshOperationsBPLibrary::GetVerticesLocations_2(UStaticMeshComponent* Target_SMC, int32 LODs, TArray<FVector>& VerticesLocations)
 {
-    if (TargetEditableMesh != nullptr)
+    if (Target_SMC != nullptr)
     {
+        UEditableMesh* TargetEditableMesh = UEditableMeshFactory::MakeEditableMesh(Target_SMC, LODs);
         const TVertexAttributesRef<FVector> Vertices = TargetEditableMesh->GetMeshDescription()->VertexAttributes().GetAttributesRef<FVector>(MeshAttribute::Vertex::Position);
         for (int32 VertexIndex = 0; VertexIndex < Vertices.GetNumElements(); VertexIndex++)
         {
             FVertexID EachVertexID = FVertexID(VertexIndex);
-            VerticesLocations.Add(Vertices.Get(EachVertexID));
+            FVector EachVertex = Target_SMC->GetComponentTransform().TransformPosition(Vertices.Get(EachVertexID));
+            VerticesLocations.Add(EachVertex);
         }
     }
 }
@@ -334,7 +369,6 @@ void UMeshOperationsBPLibrary::GetVerticesLocations_2(UEditableMesh* TargetEdita
 void UMeshOperationsBPLibrary::SetVertexLocation(UEditableMesh* TargetEditableMesh, FVertexToMove TargetVertexToMove)
 {
     // Initial Variables.
-    //FMeshDescription* GetMeshDescription();
     
     TSet<FPolygonID> PolygonsPendingNewTangentBasis;
     TSet<FPolygonID> PolygonsPendingTriangulation;
@@ -386,12 +420,10 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Targ
             FRotator ZeroRotation(0.0f, 0.0f, 0.0f);
             Target_SMC->SetWorldRotation(ZeroRotation, false, nullptr, ETeleportType::None);
 
-            // Start Pivot Operation
-            UEditableMesh* TargetEditableMesh = UEditableMeshFactory::MakeEditableMesh(Target_SMC, LODs);
 
             // Get vertices of target static mesh at start.
             TArray<FVector> VerticesLocations;
-            UMeshOperationsBPLibrary::GetVerticesLocations_2(TargetEditableMesh, LODs, VerticesLocations);
+            UMeshOperationsBPLibrary::GetVerticesLocations_2(Target_SMC, LODs, VerticesLocations);
             
             FVector NewPivot;
             switch (Pivot)
@@ -412,6 +444,9 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Targ
                 NewPivot = Target_SMC->Bounds.Origin;
                 break;
             }
+
+            // Start Pivot Operation
+            UEditableMesh* TargetEditableMesh = UEditableMeshFactory::MakeEditableMesh(Target_SMC, LODs);
 
             for (int32 VertexIndex = 0; VertexIndex < VerticesLocations.Num(); VertexIndex++)
             {
@@ -441,7 +476,7 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Targ
 
 void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot)
 {
-    AsyncTask(ENamedThreads::AnyHiPriThreadHiPriTask, [DelegateMovePivot, RootComponent, LODs]()
+    AsyncTask(ENamedThreads::GameThread, [DelegateMovePivot, RootComponent, LODs]()
         {
             FVector CustomPivot(0.f);
             bool IsThisMoveSuccessful = true;
