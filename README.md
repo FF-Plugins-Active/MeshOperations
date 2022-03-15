@@ -3,7 +3,7 @@
 - Get Vertices Locations 1 (From FPositionVertexBuffer)
 - Get Vertices Locations 2 (From EditableMesh->GetMeshDescription()->VertexAttributes)
 - Set Vertex Locations (Derivative from MoveVertices without Array for VerticesToMove ForLoop)
-- Move Pivot To New Location (with EditableMesh -> It will be converted to Dynamic Mesh from Geometry Scripting when UE5 is ready)
+- Move Pivot To New Location (with EditableMesh. It will be converted to Dynamic Mesh from Geometry Scripting when UE5 is ready)
 - Recursive Move Pivot To Center (It uses Move Pivot To New Location)
 --------------------------------------------------------------------------------------------
 - Add Scene Component with Name
@@ -36,9 +36,6 @@ USED PLUGINS and DEPENDENCIES:
 - RenderCore
 - Kismet/KismetMathLibrary
 - Math/Vector
-
-ROADMAP:
-- BUGFIX: Correct static mesh offset calculations for retaining original transforms. (Move Pivot Functions)
 
 PURPOSE:
 - This plugin created for "our" startup's internal "CAD" projects !
