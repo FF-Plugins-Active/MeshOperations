@@ -369,7 +369,6 @@ void UMeshOperationsBPLibrary::GetVerticesLocations_2(UStaticMeshComponent* Targ
 void UMeshOperationsBPLibrary::SetVertexLocation(UEditableMesh* TargetEditableMesh, FVertexToMove TargetVertexToMove)
 {
     // Initial Variables.
-    
     TSet<FPolygonID> PolygonsPendingNewTangentBasis;
     TSet<FPolygonID> PolygonsPendingTriangulation;
 
