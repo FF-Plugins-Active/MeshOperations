@@ -387,7 +387,6 @@ void UMeshOperationsBPLibrary::SetVertexLocation(UEditableMesh* TargetEditableMe
         VertexAttributesToSet.Emplace();
         FAttributesForVertex& AttributesForVertex = VertexAttributesToSet.Last();
 
-
         AttributesForVertex.VertexID = TargetVertexToMove.VertexID;
         AttributesForVertex.VertexAttributes.Attributes.Emplace(MeshAttribute::Vertex::Position, 0, FMeshElementAttributeValue(TargetVertexToMove.NewVertexPosition));
 
@@ -418,7 +417,6 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Targ
             // Reset rotation to get pure (non-rotated) world locations of vertices.
             FRotator ZeroRotation(0.0f, 0.0f, 0.0f);
             Target_SMC->SetWorldRotation(ZeroRotation, false, nullptr, ETeleportType::None);
-
 
             // Get vertices of target static mesh at start.
             TArray<FVector> VerticesLocations;
