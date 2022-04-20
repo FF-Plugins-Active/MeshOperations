@@ -35,8 +35,8 @@
 *	https://wiki.unrealengine.com/Custom_Blueprint_Node_Creation
 */
 
-UENUM()
-enum PivotDestination
+UENUM(BlueprintType)
+enum class EPivotDestination : uint8
 {
     None        UMETA(DisplayName = "None"),
     Center      UMETA(DisplayName = "Center"),
@@ -88,7 +88,7 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static void SetVertexLocation(UEditableMesh* TargetEditableMesh, FVertexToMove TargetVertexToMove);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "MovePivotToNewLocation", ToolTip = "It uses PositionVertexBuffer and EditableMesh", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set"), Category = "MeshOperations")
-    static void MovePivotToNewLocation(UStaticMeshComponent* Target_SMC, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful);
+    static void MovePivotToNewLocation(UStaticMeshComponent* Target_SMC, int32 LODs, EPivotDestination Pivot, FVector CustomPivot, bool& IsSuccessful);
     
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Recursive Move Pivot To Center", Keywords = "vertex, vertices, locations, pivot, center, custom, move, set, recursive"), Category = "MeshOperations")
     static void RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot);

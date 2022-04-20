@@ -404,7 +404,7 @@ void UMeshOperationsBPLibrary::SetVertexLocation(UEditableMesh* TargetEditableMe
     PolygonsPendingTriangulation.Append(VertexConnectedPolygons);
 }
 
-void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Target_SMC, int32 LODs, TEnumAsByte<PivotDestination> Pivot, FVector CustomPivot, bool& IsSuccessful)
+void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Target_SMC, int32 LODs, EPivotDestination Pivot, FVector CustomPivot, bool& IsSuccessful)
 {
     if (ENGINE_MAJOR_VERSION == 4)
     {
@@ -425,15 +425,15 @@ void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Targ
             FVector NewPivot;
             switch (Pivot)
             {
-            case None:
+            case EPivotDestination::None:
                 NewPivot = FVector(0, 0, 0);
                 break;
 
-            case Center:
+            case EPivotDestination::Center:
                 NewPivot = Target_SMC->Bounds.Origin;
                 break;
 
-            case Custom:
+            case EPivotDestination::Custom:
                 NewPivot = CustomPivot;
                 break;
 
@@ -488,7 +488,7 @@ void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootC
                 if (ChildrenMeshComps[ChilIndex]->GetClass()->GetName() == TEXT("StaticMeshComponent"))
                 {
                     ChildMeshComp = Cast<UStaticMeshComponent>(ChildrenMeshComps[ChilIndex]);
-                    UMeshOperationsBPLibrary::MovePivotToNewLocation(ChildMeshComp, LODs, PivotDestination::Center, CustomPivot, IsThisMoveSuccessful);
+                    UMeshOperationsBPLibrary::MovePivotToNewLocation(ChildMeshComp, LODs, EPivotDestination::Center, CustomPivot, IsThisMoveSuccessful);
                 }
             }
 
