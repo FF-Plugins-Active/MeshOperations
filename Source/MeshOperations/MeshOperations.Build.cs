@@ -36,10 +36,6 @@ public class MeshOperations : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"RHI",						// GetVertexLocations (FPositionVertexBuffer)
-				"RenderCore",				// GetVertexLocations (FPositionVertexBuffer)
-				"EditableMesh",
-				"MeshDescription",
 				"ProceduralMeshComponent",
 				// ... add private dependencies that you statically link with here ...	
 			}

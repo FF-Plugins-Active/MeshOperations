@@ -18,21 +18,87 @@
 #include "ProceduralMeshComponent.h"
 #include "KismetProceduralMeshLibrary.h"
 
-// Get Vertices Locations 1.
-#include "Rendering/PositionVertexBuffer.h"
-#include "Runtime/RenderCore/Public/ShaderCore.h"
-
-// Vertex and Pivot Functions.
-#include "EditableMesh.h"
-#include "EditableMeshFactory.h"
-#include "MeshDescription.h"
-#include "StaticMeshAttributes.h" // Set Vertex Location
-
 #include "MeshOperations.h"
 
 UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 
+}
+
+FString UMeshOperationsBPLibrary::GetClassName(const UObject* Object)
+{
+    UClass* Class = Object->GetClass();
+    return Class->GetName();
+}
+
+bool UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, bool bUseReadableName, FString Delimeter, FString& OutName)
+{
+    if (IsValid(Object) == true)
+    {
+        FString ObjectName;
+        if (bUseReadableName == true)
+        {
+            ObjectName = Object->GetReadableName();
+        }
+
+        else
+        {
+            ObjectName = Object->GetName();
+        }
+
+        FString GeneratedName;
+        TArray<FString> NameSections;
+        ObjectName.ParseIntoArray(NameSections, *Delimeter, true);
+
+        if (NameSections.Num() > 1)
+        {
+            if (WITH_EDITOR == true)
+            {
+                NameSections.RemoveAt(NameSections.Num() - 1);
+                GeneratedName = FString::Join(NameSections, *Delimeter);
+            }
+
+            else
+            {
+                for (int32 SectionID = 0; SectionID < 1; SectionID++)
+                {
+                    NameSections.RemoveAt(NameSections.Num() - 1 - SectionID);
+                }
+
+                GeneratedName = FString::Join(NameSections, *Delimeter);
+            }
+
+            OutName = GeneratedName;
+
+            return true;
+        }
+
+        else
+        {
+            return false;
+        }
+    }
+
+    else
+    {
+        return false;
+    }
+
+}
+
+bool UMeshOperationsBPLibrary::GetComponentByName(FName InName, UObject* Owner, USceneComponent*& OutComponent)
+{
+    OutComponent = Cast<USceneComponent>(Owner->GetDefaultSubobjectByName(InName));
+
+    if (IsValid(OutComponent) == true)
+    {
+        return true;
+    }
+
+    else
+    {
+        return false;
+    }
 }
 
 void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FString In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC)
@@ -194,40 +260,6 @@ void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FString In_PMC_Name
     }
 }
 
-FString UMeshOperationsBPLibrary::GetClassName(const UObject* Object)
-{
-    UClass* Class = Object->GetClass();
-    return Class->GetName();
-}
-
-void UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, FString Delimeter, FString& OutName)
-{
-    // Initialize variables.
-    FString GeneratedName;
-    TArray<FString> NameSections;
-
-    FString ObjectName = Object->GetName();
-    ObjectName.ParseIntoArray(NameSections, *Delimeter, true);
-
-    if (WITH_EDITOR == true)
-    {
-        NameSections.RemoveAt(NameSections.Num()-1);
-        GeneratedName = FString::Join(NameSections, *Delimeter);
-    }
-
-    else
-    {
-        for (int32 SectionID = 0; SectionID < 1; SectionID++)
-        {
-            NameSections.RemoveAt(NameSections.Num() - 1 - SectionID);
-        }
-
-        GeneratedName = FString::Join(NameSections, *Delimeter);
-    }
-    
-    OutName = GeneratedName;
-}
-
 void UMeshOperationsBPLibrary::OptimizeCenter(USceneComponent* AssetRoot)
 {
     // Array variable for children components.
@@ -328,191 +360,34 @@ void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap
     }
 }
 
-void UMeshOperationsBPLibrary::GetVerticesLocations_1(UStaticMeshComponent* Target_SMC, int32 LODs, TArray<FVector>& AllVertices, TArray<FVector>& UniqueVertices)
-{    
-    if (Target_SMC != nullptr)
-    {   
-        // Get PositionVertexBuffer at start.
-        FPositionVertexBuffer* PositionVertexBuffer = &Target_SMC->GetStaticMesh()->GetRenderData()->LODResources[LODs].VertexBuffers.PositionVertexBuffer;
-
-        // Get vertex positions from PositionVertexBuffer and convert it to world space from mesh space.
-        FVector EachVertex;
-
-        for (uint32 VertexIndex = 0; VertexIndex < PositionVertexBuffer->GetNumVertices(); VertexIndex++)
-        {
-            EachVertex = Target_SMC->GetComponentTransform().TransformPosition(PositionVertexBuffer->VertexPosition(VertexIndex));
-            AllVertices.Add(EachVertex);
-
-            if (UniqueVertices.Contains(EachVertex) == false)
-            {
-                UniqueVertices.Add(EachVertex);
-            }
-        }
-    }
-}
-
-void UMeshOperationsBPLibrary::GetVerticesLocations_2(UStaticMeshComponent* Target_SMC, int32 LODs, TArray<FVector>& VerticesLocations)
+bool UMeshOperationsBPLibrary::CreatePMFromSM(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs)
 {
-    if (Target_SMC != nullptr)
+    if (IsValid(Target_SMC) && IsValid(Target_PMC) == true)
     {
-        UEditableMesh* TargetEditableMesh = UEditableMeshFactory::MakeEditableMesh(Target_SMC, LODs);
-        const TVertexAttributesRef<FVector> Vertices = TargetEditableMesh->GetMeshDescription()->VertexAttributes().GetAttributesRef<FVector>(MeshAttribute::Vertex::Position);
-        for (int32 VertexIndex = 0; VertexIndex < Vertices.GetNumElements(); VertexIndex++)
+        TArray<FColor> VertexColor;
+        TArray<FVector> Vertices;
+        TArray<int32> Triangles;
+        TArray<FVector> Normals;
+        TArray<FVector2D> UVs;
+        TArray<FProcMeshTangent> Tangents;
+
+        for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
         {
-            FVertexID EachVertexID = FVertexID(VertexIndex);
-            FVector EachVertex = Target_SMC->GetComponentTransform().TransformPosition(Vertices.Get(EachVertexID));
-            VerticesLocations.Add(EachVertex);
+            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
+            Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
         }
-    }
-}
 
-void UMeshOperationsBPLibrary::SetVertexLocation(UEditableMesh* TargetEditableMesh, FVertexToMove TargetVertexToMove)
-{
-    // Initial Variables.
-    TSet<FPolygonID> PolygonsPendingNewTangentBasis;
-    TSet<FPolygonID> PolygonsPendingTriangulation;
-
-    static TSet<FPolygonID> VertexConnectedPolygons;
-    VertexConnectedPolygons.Reset();
-
-    static TArray<FAttributesForVertex> VertexAttributesToSet;
-    VertexAttributesToSet.Reset();
-
-    const TVertexAttributesRef<FVector> VertexPositions = TargetEditableMesh->GetMeshDescription()->VertexAttributes().GetAttributesRef<FVector>(MeshAttribute::Vertex::Position);
-
-    const FVector CurrentPosition = VertexPositions[TargetVertexToMove.VertexID];
-
-    if (TargetVertexToMove.NewVertexPosition != CurrentPosition)
-    {
-        VertexAttributesToSet.Emplace();
-        FAttributesForVertex& AttributesForVertex = VertexAttributesToSet.Last();
-
-        AttributesForVertex.VertexID = TargetVertexToMove.VertexID;
-        AttributesForVertex.VertexAttributes.Attributes.Emplace(MeshAttribute::Vertex::Position, 0, FMeshElementAttributeValue(TargetVertexToMove.NewVertexPosition));
-
-        // All of the polygons that share this vertex will need new normals
-        static TArray<FPolygonID> ConnectedPolygonRefs;
-        TargetEditableMesh->GetVertexConnectedPolygons(TargetVertexToMove.VertexID, /* Out */ ConnectedPolygonRefs);
-        VertexConnectedPolygons.Append(ConnectedPolygonRefs);
-    }
-
-    TargetEditableMesh->SetVerticesAttributes(VertexAttributesToSet);
-
-    // Mark all polygons connected to the vertex as requiring a new tangent basis and retriangulation
-    // Everything needs to be retriangulated because convexity may have changed
-    PolygonsPendingNewTangentBasis.Append(VertexConnectedPolygons);
-    PolygonsPendingTriangulation.Append(VertexConnectedPolygons);
-}
-
-void UMeshOperationsBPLibrary::MovePivotToNewLocation(UStaticMeshComponent* Target_SMC, int32 LODs, EPivotDestination Pivot, FVector CustomPivot, bool& IsSuccessful)
-{
-    if (ENGINE_MAJOR_VERSION == 4)
-    {
-        if (Target_SMC != nullptr)
+        for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
         {
-            // Get original transform values to retain them.
-            FVector OriginalCenter = Target_SMC->Bounds.Origin;
-            FRotator OriginalRotation = Target_SMC->GetComponentRotation();
-
-            // Reset rotation to get pure (non-rotated) world locations of vertices.
-            FRotator ZeroRotation(0.0f, 0.0f, 0.0f);
-            Target_SMC->SetWorldRotation(ZeroRotation, false, nullptr, ETeleportType::None);
-
-            // Get vertices of target static mesh at start.
-            TArray<FVector> VerticesLocations;
-            UMeshOperationsBPLibrary::GetVerticesLocations_2(Target_SMC, LODs, VerticesLocations);
-            
-            FVector NewPivot;
-            switch (Pivot)
-            {
-            case EPivotDestination::None:
-                NewPivot = FVector(0, 0, 0);
-                break;
-
-            case EPivotDestination::Center:
-                NewPivot = Target_SMC->Bounds.Origin;
-                break;
-
-            case EPivotDestination::Custom:
-                NewPivot = CustomPivot;
-                break;
-
-            default:
-                NewPivot = Target_SMC->Bounds.Origin;
-                break;
-            }
-
-            // Start Pivot Operation
-            UEditableMesh* TargetEditableMesh = UEditableMeshFactory::MakeEditableMesh(Target_SMC, LODs);
-
-            for (int32 VertexIndex = 0; VertexIndex < VerticesLocations.Num(); VertexIndex++)
-            {
-                FVertexToMove EachVTM;
-                EachVTM.VertexID = FVertexID(VertexIndex);
-                EachVTM.NewVertexPosition = VerticesLocations[VertexIndex] - NewPivot;
-                UMeshOperationsBPLibrary::SetVertexLocation(TargetEditableMesh, EachVTM);
-            }
-
-            TargetEditableMesh->Commit();
-            TargetEditableMesh->RebuildRenderMesh();
-
-            // Return object to its original transform.
-            Target_SMC->AddWorldOffset(OriginalCenter - Target_SMC->Bounds.Origin, false, nullptr, ETeleportType::None);
-            Target_SMC->SetWorldRotation(OriginalRotation, false, nullptr, ETeleportType::None);
-
-            IsSuccessful = true;
+            Target_PMC->SetMaterial(MaterialIndex, Material);
         }
+
+        return true;
     }
 
     else
     {
-        IsSuccessful = false;
+        return false;
     }
 
-}
-
-void UMeshOperationsBPLibrary::RecursiveMovePivotToCenter(USceneComponent* RootComponent, int32 LODs, FCenterPivot DelegateMovePivot)
-{
-    AsyncTask(ENamedThreads::GameThread, [DelegateMovePivot, RootComponent, LODs]()
-        {
-            FVector CustomPivot(0.f);
-            bool IsThisMoveSuccessful = true;
-            UStaticMeshComponent* ChildMeshComp = nullptr;
-            
-            TArray<USceneComponent*> ChildrenMeshComps;
-            RootComponent->GetChildrenComponents(true, ChildrenMeshComps);
-            
-            TArray<FVector> NewVertices;
-            for (int32 ChilIndex = 0; ChilIndex < ChildrenMeshComps.Num(); ChilIndex++)
-            {
-                if (ChildrenMeshComps[ChilIndex]->GetClass()->GetName() == TEXT("StaticMeshComponent"))
-                {
-                    ChildMeshComp = Cast<UStaticMeshComponent>(ChildrenMeshComps[ChilIndex]);
-                    UMeshOperationsBPLibrary::MovePivotToNewLocation(ChildMeshComp, LODs, EPivotDestination::Center, CustomPivot, IsThisMoveSuccessful);
-                }
-            }
-
-            AsyncTask(ENamedThreads::GameThread, [DelegateMovePivot]()
-                {
-                    DelegateMovePivot.ExecuteIfBound(true);
-                }
-            );
-        }
-    );
-}
-
-void UMeshOperationsBPLibrary::CreatePMFromSM(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs, TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
-{
-    TArray<FColor> VertexColor;
-    TSet<FVector> UniqueVertices;
-    for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
-    {
-        UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
-        Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
-    }
-
-    for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
-    {
-        Target_PMC->SetMaterial(MaterialIndex, Material);
-    }
 }

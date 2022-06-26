@@ -119,11 +119,10 @@ void UAC_Rename::DeleteEmptyParents(USceneComponent* AssetRoot, UObject* Outer, 
 			}
 
 			AsyncTask(ENamedThreads::GameThread, [DelegateDeleteParents]()
-			{
-				DelegateDeleteParents.ExecuteIfBound(true);
-			}
+				{
+					DelegateDeleteParents.ExecuteIfBound(true);
+				}
 			);
-
 		}
 	);
 }
