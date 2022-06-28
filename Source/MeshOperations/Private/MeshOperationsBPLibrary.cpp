@@ -101,23 +101,17 @@ bool UMeshOperationsBPLibrary::GetComponentByName(FName InName, UObject* Owner, 
     }
 }
 
-void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FString In_SMC_Name, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC)
+void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(FName InName, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC)
 {
     if (SMC_Outer != NULL)
     {
-        FName SMC_Name;
-        if (In_SMC_Name.IsEmpty() == true)
+        if (InName.ToString().IsEmpty() == true)
         {
-            SMC_Name = NAME_None;
-        }
-
-        else
-        {
-            SMC_Name = *In_SMC_Name;
+            InName = NAME_None;
         }
         
         //Static Mesh Component Creation.
-        UStaticMeshComponent* StaticMeshComp = NewObject<UStaticMeshComponent>(SMC_Outer, SMC_Name);
+        UStaticMeshComponent* StaticMeshComp = NewObject<UStaticMeshComponent>(SMC_Outer, InName);
 
         if (StaticMeshComp != nullptr)
         {
@@ -141,7 +135,7 @@ void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FString In_SMC_Na
 
             //Output Pins.
             Out_SMC = StaticMeshComp;
-            Out_SMC_Name = SMC_Name;
+            Out_SMC_Name = InName;
             Is_SMC_Created = StaticMeshComp->IsValidLowLevel();
         }
     }
@@ -150,28 +144,22 @@ void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(const FString In_SMC_Na
     {
         //If outer is not valid, we can not create a static mesh component and program will crash. So we just return false.
         Out_SMC = nullptr;
-        Out_SMC_Name = TEXT("");
+        Out_SMC_Name = NAME_None;
         Is_SMC_Created = false;
     }
 }
 
-void UMeshOperationsBPLibrary::AddSceneCompWithName(const FString In_SC_Name, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC)
+void UMeshOperationsBPLibrary::AddSceneCompWithName(FName InName, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC)
 {
     if (SC_Outer != NULL)
     {
-        FName SC_Name;
-        if (In_SC_Name.IsEmpty() == true)
+        if (InName.ToString().IsEmpty() == true)
         {
-           SC_Name = NAME_None;
-        }
-
-        else
-        {
-            SC_Name = *In_SC_Name;
+            InName = NAME_None;
         }
 
         //Scene Component Creation.
-        USceneComponent* SceneComp = NewObject<USceneComponent>(SC_Outer, SC_Name);
+        USceneComponent* SceneComp = NewObject<USceneComponent>(SC_Outer, InName);
 
         if (SceneComp != nullptr)
         {
@@ -192,7 +180,7 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(const FString In_SC_Name, AA
 
             //Output Pins.
             Out_SC = SceneComp;
-            Out_SC_Name = SC_Name;
+            Out_SC_Name = InName;
             Is_SC_Created = SceneComp->IsValidLowLevel();
         }
     }
@@ -201,28 +189,22 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(const FString In_SC_Name, AA
     {
         //If outer is not valid, we can not create a "scene component" and program will crash. So we just return false.       
         Out_SC = nullptr;
-        Out_SC_Name = TEXT("");
+        Out_SC_Name = NAME_None;
         Is_SC_Created = false;
     }
 }
 
-void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FString In_PMC_Name, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC)
+void UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName InName, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC)
 {
     if (PMC_Outer != NULL)
     {
-        FName PMC_Name; 
-        if (In_PMC_Name.IsEmpty() == true)
+        if (InName.ToString().IsEmpty() == true)
         {
-            PMC_Name = NAME_None;
-        }
-
-        else
-        {
-            PMC_Name = *In_PMC_Name;
+            InName = NAME_None;
         }
         
         //Procedural Mesh Component Creation.
-        UProceduralMeshComponent* ProcMeshComp = NewObject<UProceduralMeshComponent>(PMC_Outer, PMC_Name);
+        UProceduralMeshComponent* ProcMeshComp = NewObject<UProceduralMeshComponent>(PMC_Outer, InName);
 
         if (ProcMeshComp != nullptr)
         {
@@ -246,7 +228,7 @@ void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FString In_PMC_Name
 
             //Output Pins
             Out_PMC = ProcMeshComp;
-            Out_PMC_Name = PMC_Name;
+            Out_PMC_Name = InName;
             Is_PMC_Created = ProcMeshComp->IsValidLowLevel();
         }
     }
@@ -255,7 +237,7 @@ void UMeshOperationsBPLibrary::AddProcMeshCompWithName(const FString In_PMC_Name
     {
         //If outer is not valid, we can not create a procedural mesh component and program will crash. So we just return false.
         Out_PMC = nullptr;
-        Out_PMC_Name = TEXT("");
+        Out_PMC_Name = NAME_None;
         Is_PMC_Created = false;
     }
 }
@@ -390,4 +372,92 @@ bool UMeshOperationsBPLibrary::CreatePMFromSM(UStaticMeshComponent* Target_SMC, 
         return false;
     }
 
+}
+
+bool UMeshOperationsBPLibrary::RenameComponent(UPARAM(ref)UObject* Target, UObject* Outer, FName NewName)
+{
+    if (IsValid(Target) == true)
+    {
+        Target->Rename(*(NewName.ToString()), Outer);
+        
+        return true;
+    }
+
+    else
+    {
+        return false;
+    }
+}
+
+void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, UObject* Outer, FDeleteParents DelegateDeleteParents)
+{
+    AsyncTask(ENamedThreads::GameThread, [DelegateDeleteParents, AssetRoot, Outer]()
+        {
+            // Get all children components at start.
+            TArray<USceneComponent*> ChildrenComps;
+            AssetRoot->GetChildrenComponents(true, ChildrenComps);
+
+            if (ChildrenComps.Num() > 1)
+            {
+                // Conditions.
+                bool IsProcessFinished = false;
+                TMap<USceneComponent*, bool> AnyEmptyParentLeft;
+
+                while (IsProcessFinished == false)
+                {
+                    for (int32 ChildIndex = 0; ChildIndex < ChildrenComps.Num(); ChildIndex++)
+                    {
+                        if (ChildrenComps[ChildIndex]->GetClass()->GetName() == TEXT("StaticMeshComponent") && ChildrenComps[ChildIndex]->GetAttachParent()->GetNumChildrenComponents() == 1)
+                        {
+                            USceneComponent* EachChild = ChildrenComps[ChildIndex];
+                            USceneComponent* MiddleParent = EachChild->GetAttachParent();
+                            USceneComponent* GrandParent = MiddleParent->GetAttachParent();
+
+                            // We will use this name as static mesh's new name.
+                            const FString New_SMC_Name = MiddleParent->GetName();
+
+                            // Change middle parent's name and destroy it.
+                            FGuid MiddleParentSuffix = FGuid::NewGuid();
+                            const FString MiddleParentName = TEXT("DeletedSceneComp") + MiddleParentSuffix.ToString();
+                            MiddleParent->Rename(*MiddleParentName, Outer);
+                            MiddleParent->DestroyComponent(false);
+
+                            // Change target static mesh name.
+                            EachChild->AttachToComponent(GrandParent, FAttachmentTransformRules::KeepWorldTransform, NAME_None);
+                            EachChild->Rename(*New_SMC_Name, Outer);
+
+                            // Check if there is any empty parent left.
+                            if (EachChild->GetAttachParent()->GetNumChildrenComponents() == 1)
+                            {
+                                AnyEmptyParentLeft.Add(EachChild, true);
+                            }
+                        }
+                    }
+
+                    // If there is an empty parent, get related component and start loop again. 
+                    TArray<bool> Array_Bool_Values;
+                    AnyEmptyParentLeft.GenerateValueArray(Array_Bool_Values);
+
+                    if (Array_Bool_Values.Contains(true) == true)
+                    {
+                        AnyEmptyParentLeft.GenerateKeyArray(ChildrenComps);
+                        AnyEmptyParentLeft.Empty();
+                        IsProcessFinished = false;
+                    }
+
+                    else
+                    {
+                        AnyEmptyParentLeft.Empty();
+                        IsProcessFinished = true;
+                    }
+                }
+            }
+
+            AsyncTask(ENamedThreads::GameThread, [DelegateDeleteParents]()
+                {
+                    DelegateDeleteParents.ExecuteIfBound(true);
+                }
+            );
+        }
+    );
 }
