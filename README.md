@@ -1,11 +1,8 @@
 # MeshOperations
 
 Editable mesh component deprecated at UE5 and most of geometry script functions are editor only.
-For this reason, we created a new plugin for vertex operations with "Position Vertex Buffer".
-Rightnow render result is correct but we need to work on collisions. So it is not production ready.
-
-Vertex Operations Plugin
-https://github.com/FF-Projects-UE/VertexOperations
+For this reason, we created a new plugin for runtime pivot operations.
+You can mail us to reach it.
 
 --------------------------------------------------------------------------------------------
 - Add Scene Component with Name
