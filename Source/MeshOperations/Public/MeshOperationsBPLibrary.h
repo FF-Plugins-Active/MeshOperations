@@ -68,5 +68,5 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static bool RenameComponent(UPARAM(ref)UObject* Target, UObject* Owner, FName NewName);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Parents", Keywords = "optimize,hierarchy,empty,parent,parents"), Category = "MeshOperations")
-    virtual void DeleteEmptyParents(USceneComponent* AssetRoot, UObject* Outer, FDeleteParents DelegateDeleteParents);
+    static void DeleteEmptyParents(USceneComponent* AssetRoot, UObject* Outer, FDeleteParents DelegateDeleteParents);
 };
