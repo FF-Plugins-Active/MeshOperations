@@ -17,8 +17,8 @@ You can mail us to reach it.
 - Optimize Assembly Height
 - Record Transforms
 - Delete Empty Roots
-- Delete Empty Parents Recursive (AC_Rename)
-- Rename Object (AC_Rename)
+- Delete Empty Parents Recursive
+- Rename Object
 --------------------------------------------------------------------------------------------
 STATE:
 - UE5 Ready
