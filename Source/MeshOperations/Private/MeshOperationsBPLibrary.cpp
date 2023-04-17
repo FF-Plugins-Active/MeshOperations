@@ -18,6 +18,9 @@
 #include "ProceduralMeshComponent.h"
 #include "KismetProceduralMeshLibrary.h"
 
+#include "MeshDescription.h"
+#include "ProceduralMeshConversion.h"
+
 #include "MeshOperations.h"
 
 UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -194,84 +197,126 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(FName InName, AActor* SC_Out
     }
 }
 
-void UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName InName, AActor* PMC_Outer, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, const FTransform PMC_Relative_Transform, bool& Is_PMC_Created, FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC)
+bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, const FTransform PMC_Relative_Transform)
 {
-    if (PMC_Outer != NULL)
+    if (IsValid(PMC_Outer) == false)
     {
-        if (InName.ToString().IsEmpty() == true)
+        return false;
+    }
+    
+    if (InName.ToString().IsEmpty() == true)
+    {
+        InName = NAME_None;
+    }
+
+    //Procedural Mesh Component Creation.
+    UProceduralMeshComponent* ProcMeshComp = NewObject<UProceduralMeshComponent>(PMC_Outer, InName);
+
+    if (IsValid(ProcMeshComp) == false)
+    {
+        return false;
+    }
+
+    ProcMeshComp->SetMobility(PMC_Mobility);
+    ProcMeshComp->bUseAsyncCooking = bUseAsyncCooking;
+    ProcMeshComp->RegisterComponent();
+    ProcMeshComp->AttachToComponent(PMC_Outer->GetRootComponent(), FAttachmentTransformRules(PMC_Attachment_Rule, true));
+
+    if (PMC_Manual_Attachment == true)
+    {
+        //Set Realtive Transform.
+        ProcMeshComp->SetRelativeTransform(PMC_Relative_Transform);
+    }
+
+    //Output Pins
+    Out_PMC = ProcMeshComp;
+    Out_PMC_Name = InName;
+
+    return true;
+}
+
+bool UMeshOperationsBPLibrary::Convert_SMC_To_PMC(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs)
+{
+    if (IsValid(Target_SMC) && IsValid(Target_PMC) == true)
+    {
+        TArray<FColor> VertexColor;
+        TArray<FVector> Vertices;
+        TArray<int32> Triangles;
+        TArray<FVector> Normals;
+        TArray<FVector2D> UVs;
+        TArray<FProcMeshTangent> Tangents;
+
+        for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
         {
-            InName = NAME_None;
+            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
+            Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
         }
-        
-        //Procedural Mesh Component Creation.
-        UProceduralMeshComponent* ProcMeshComp = NewObject<UProceduralMeshComponent>(PMC_Outer, InName);
 
-        if (ProcMeshComp != nullptr)
+        for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
         {
-            //Set Mobility of Procedural Mesh Component.
-            ProcMeshComp->SetMobility(PMC_Mobility);
-
-            //Render Procedural Mesh Component.
-            ProcMeshComp->RegisterComponent();
-
-            //Get Root Component of Outer.
-            USceneComponent* ActorRootForPMC = PMC_Outer->GetRootComponent();
-
-            //Create Attachment Rules.
-            ProcMeshComp->AttachToComponent(ActorRootForPMC, FAttachmentTransformRules(PMC_Attachment_Rule, true));
-
-            if (PMC_Manual_Attachment == true)
-            {
-                //Set Realtive Transform.
-                ProcMeshComp->SetRelativeTransform(PMC_Relative_Transform);
-            }
-
-            //Output Pins
-            Out_PMC = ProcMeshComp;
-            Out_PMC_Name = InName;
-            Is_PMC_Created = ProcMeshComp->IsValidLowLevel();
+            Target_PMC->SetMaterial(MaterialIndex, Material);
         }
+
+        return true;
     }
 
     else
     {
-        //If outer is not valid, we can not create a procedural mesh component and program will crash. So we just return false.
-        Out_PMC = nullptr;
-        Out_PMC_Name = NAME_None;
-        Is_PMC_Created = false;
+        return false;
     }
 }
 
-void UMeshOperationsBPLibrary::OptimizeCenter(USceneComponent* AssetRoot)
+bool UMeshOperationsBPLibrary::Convert_PMC_To_SMC(UStaticMesh*& Out_Sm, UProceduralMeshComponent* In_Pmc)
 {
-    // Array variable for children components.
-    TArray<USceneComponent*> Children;
-
-    // Array variable for children locations.
-    TArray<FVector> ChildrenLocations;
-
-    // Get children components of asset root.
-    AssetRoot->GetChildrenComponents(false, Children);
-
-    // Add relative locations of children components to children locations array.
-    for (int32 ChildID = 0; ChildID < Children.Num(); ChildID++)
+    if (IsValid(In_Pmc) == false)
     {
-        ChildrenLocations.Add(Children[ChildID]->GetRelativeLocation());
+        return false;
+    }
+ 
+    FName PMC_Name = FName(*In_Pmc->GetName());
+    UStaticMesh* StaticMesh = NewObject<UStaticMesh>(GetTransientPackage(), PMC_Name, EObjectFlags::RF_Transient);
+    StaticMesh->bAllowCPUAccess = true;
+    StaticMesh->NeverStream = true;
+    StaticMesh->InitResources();
+
+    FStaticMeshSourceModel& SrcModel = StaticMesh->AddSourceModel();
+    SrcModel.BuildSettings.bRecomputeNormals = true;
+    SrcModel.BuildSettings.bRecomputeTangents = true;
+    SrcModel.BuildSettings.bRemoveDegenerates = true;
+    SrcModel.BuildSettings.bUseHighPrecisionTangentBasis = true;
+    SrcModel.BuildSettings.bUseFullPrecisionUVs = true;
+    SrcModel.BuildSettings.bGenerateLightmapUVs = false;
+    SrcModel.BuildSettings.SrcLightmapIndex = 0;
+    SrcModel.BuildSettings.DstLightmapIndex = 1;
+    
+    FMeshDescription MeshDescription = BuildMeshDescription(In_Pmc);
+    StaticMesh->CreateMeshDescription(0, MoveTemp(MeshDescription));
+    StaticMesh->CommitMeshDescription(0);
+    
+    StaticMesh->CalculateExtendedBounds();
+    StaticMesh->SetBodySetup(In_Pmc->ProcMeshBodySetup);
+
+    TSet<UMaterialInterface*> UniqueMaterials;
+    const int32 NumSections = In_Pmc->GetNumSections();
+    for (int32 SectionIdx = 0; SectionIdx < NumSections; SectionIdx++)
+    {
+        FProcMeshSection* ProcSection = In_Pmc->GetProcMeshSection(SectionIdx);
+        UMaterialInterface* Material = In_Pmc->GetMaterial(SectionIdx);
+        UniqueMaterials.Add(Material);
     }
 
-    // Calculate assembly center (Relative Location).
-    FVector Sum(0.f);
-    for (int32 ChildID = 0; ChildID < (ChildrenLocations.Num()); ChildID++)
+    for (auto* Material : UniqueMaterials)
     {
-        Sum += ChildrenLocations[ChildID];
+        StaticMesh->GetStaticMaterials().Add(FStaticMaterial(Material));
     }
-    FVector AssemblyCenter = Sum / ((float)ChildrenLocations.Num());
 
-    // Subtract assembly center from each child's relative location.
-    for (int32 ChildID = 0; ChildID < ChildrenLocations.Num(); ChildID++)
-    {
-        Children[ChildID]->SetRelativeLocation((ChildrenLocations[ChildID] - AssemblyCenter), false, nullptr, ETeleportType::None);
-    }
+    StaticMesh->Build();
+    StaticMesh->PostEditChange();
+    StaticMesh->MarkPackageDirty();
+
+    Out_Sm = StaticMesh;
+
+    return true;
 }
 
 void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)
@@ -315,77 +360,6 @@ void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)
             // Check asset root's children number after process. If it is equal one return to start.
             ChildrenCount = AssetRoot->GetNumChildrenComponents();
         }
-    }
-}
-
-void UMeshOperationsBPLibrary::OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset)
-{
-    FVector Origin;
-    FVector BoxExtent;
-    AssetRoot->GetOwner()->GetActorBounds(false, Origin, BoxExtent, true);
-
-    float NewHeight = BoxExtent.Z + Z_Offset;
-    FVector NewLocation(0.f, 0.f, NewHeight);
-
-    AssetRoot->AddWorldOffset(NewLocation, false, nullptr, ETeleportType::None);
-}
-
-void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents)
-{
-    AssetRoot->GetChildrenComponents(true, ChildComponents);
-    AllComponents = ChildComponents;
-    AllComponents.Add(AssetRoot);
-
-    for (int32 ChildID = 0; ChildID < AllComponents.Num(); ChildID++)
-    {
-        MapTransform.Add(AllComponents[ChildID], AllComponents[ChildID]->GetRelativeTransform());
-    }
-}
-
-bool UMeshOperationsBPLibrary::CreatePMFromSM(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs)
-{
-    if (IsValid(Target_SMC) && IsValid(Target_PMC) == true)
-    {
-        TArray<FColor> VertexColor;
-        TArray<FVector> Vertices;
-        TArray<int32> Triangles;
-        TArray<FVector> Normals;
-        TArray<FVector2D> UVs;
-        TArray<FProcMeshTangent> Tangents;
-
-        for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
-        {
-            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
-            Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
-        }
-
-        for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
-        {
-            Target_PMC->SetMaterial(MaterialIndex, Material);
-        }
-
-        return true;
-    }
-
-    else
-    {
-        return false;
-    }
-
-}
-
-bool UMeshOperationsBPLibrary::RenameComponent(UPARAM(ref)UObject* Target, UObject* Outer, FName NewName)
-{
-    if (IsValid(Target) == true)
-    {
-        Target->Rename(*(NewName.ToString()), Outer);
-        
-        return true;
-    }
-
-    else
-    {
-        return false;
     }
 }
 
@@ -460,4 +434,75 @@ void UMeshOperationsBPLibrary::DeleteEmptyParents(USceneComponent* AssetRoot, UO
             );
         }
     );
+}
+
+void UMeshOperationsBPLibrary::OptimizeCenter(USceneComponent* AssetRoot)
+{
+    // Array variable for children components.
+    TArray<USceneComponent*> Children;
+
+    // Array variable for children locations.
+    TArray<FVector> ChildrenLocations;
+
+    // Get children components of asset root.
+    AssetRoot->GetChildrenComponents(false, Children);
+
+    // Add relative locations of children components to children locations array.
+    for (int32 ChildID = 0; ChildID < Children.Num(); ChildID++)
+    {
+        ChildrenLocations.Add(Children[ChildID]->GetRelativeLocation());
+    }
+
+    // Calculate assembly center (Relative Location).
+    FVector Sum(0.f);
+    for (int32 ChildID = 0; ChildID < (ChildrenLocations.Num()); ChildID++)
+    {
+        Sum += ChildrenLocations[ChildID];
+    }
+    FVector AssemblyCenter = Sum / ((float)ChildrenLocations.Num());
+
+    // Subtract assembly center from each child's relative location.
+    for (int32 ChildID = 0; ChildID < ChildrenLocations.Num(); ChildID++)
+    {
+        Children[ChildID]->SetRelativeLocation((ChildrenLocations[ChildID] - AssemblyCenter), false, nullptr, ETeleportType::None);
+    }
+}
+
+void UMeshOperationsBPLibrary::OptimizeHeight(USceneComponent* AssetRoot, float Z_Offset)
+{
+    FVector Origin;
+    FVector BoxExtent;
+    AssetRoot->GetOwner()->GetActorBounds(false, Origin, BoxExtent, true);
+
+    float NewHeight = BoxExtent.Z + Z_Offset;
+    FVector NewLocation(0.f, 0.f, NewHeight);
+
+    AssetRoot->AddWorldOffset(NewLocation, false, nullptr, ETeleportType::None);
+}
+
+void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap<USceneComponent*, FTransform>& MapTransform, TArray<USceneComponent*>& AllComponents, TArray<USceneComponent*>& ChildComponents)
+{
+    AssetRoot->GetChildrenComponents(true, ChildComponents);
+    AllComponents = ChildComponents;
+    AllComponents.Add(AssetRoot);
+
+    for (int32 ChildID = 0; ChildID < AllComponents.Num(); ChildID++)
+    {
+        MapTransform.Add(AllComponents[ChildID], AllComponents[ChildID]->GetRelativeTransform());
+    }
+}
+
+bool UMeshOperationsBPLibrary::RenameComponent(UPARAM(ref)UObject* Target, UObject* Outer, FName NewName)
+{
+    if (IsValid(Target) == true)
+    {
+        Target->Rename(*(NewName.ToString()), Outer);
+        
+        return true;
+    }
+
+    else
+    {
+        return false;
+    }
 }

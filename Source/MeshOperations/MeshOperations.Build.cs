@@ -37,6 +37,7 @@ public class MeshOperations : ModuleRules
 				"Slate",
 				"SlateCore",
 				"ProceduralMeshComponent",
+                "MeshDescription"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
