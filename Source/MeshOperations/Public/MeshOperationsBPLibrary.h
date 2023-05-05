@@ -41,19 +41,19 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static bool GetComponentByName(FName InName, UObject* Owner, USceneComponent*& OutComponent);
         
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddStaticMeshCompWithName", Keywords = "static,mesh,component,name"), Category = "MeshOperations")
-    static void AddStaticMeshCompWithName(FName InName, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC);
+    static bool AddStaticMeshCompWithName(UStaticMeshComponent*& Out_SMC, FName& Out_SMC_Name, FName InName, AActor* SMC_Outer, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, FTransform SMC_Relative_Transform, EComponentMobility::Type SMC_Mobility = EComponentMobility::Movable);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddSceneCompWithName", Keywords = "scene,component,mesh,name"), Category = "MeshOperations")
-    static void AddSceneCompWithName(FName InName, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, const FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC);
+    static void AddSceneCompWithName(FName InName, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddProcMeshCompWithName", Keywords = "procedural,mesh,component,name"), Category = "MeshOperations")
-    static bool AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, const FTransform PMC_Relative_Transform);
+    static bool AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, FTransform PMC_Relative_Transform, EComponentMobility::Type PMC_Mobility = EComponentMobility::Movable);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Convert Static Mesh to ProcMesh", Keywords = "static, procedural, mesh, component, convert"), Category = "MeshOperations")
     static bool Convert_SMC_To_PMC(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Convert ProcMesh to Static Mesh", Keywords = "static, procedural, mesh, component, convert"), Category = "MeshOperations")
-    static bool Convert_PMC_To_SMC(UStaticMesh*& Out_Sm, UProceduralMeshComponent* In_Pmc);
+    static bool Convert_PMC_To_SMC(UStaticMesh*& Out_Sm, UObject* Outer, UProceduralMeshComponent* In_Pmc);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);

@@ -18,7 +18,9 @@
 #include "ProceduralMeshComponent.h"
 #include "KismetProceduralMeshLibrary.h"
 
+// Procedural to Static Mesh
 #include "MeshDescription.h"
+#include "StaticMeshDescription.h"
 #include "ProceduralMeshConversion.h"
 
 #include "MeshOperations.h"
@@ -36,57 +38,53 @@ FString UMeshOperationsBPLibrary::GetClassName(const UObject* Object)
 
 bool UMeshOperationsBPLibrary::GetObjectNameForPackage(USceneComponent* Object, bool bUseReadableName, FString Delimeter, FString& OutName)
 {
-    if (IsValid(Object) == true)
+    if (IsValid(Object) == false)
     {
-        FString ObjectName;
-        if (bUseReadableName == true)
+        return false;
+    }
+    
+    FString ObjectName;
+    if (bUseReadableName == true)
+    {
+        ObjectName = Object->GetReadableName();
+    }
+
+    else
+    {
+        ObjectName = Object->GetName();
+    }
+
+    FString GeneratedName;
+    TArray<FString> NameSections;
+    ObjectName.ParseIntoArray(NameSections, *Delimeter, true);
+
+    if (NameSections.Num() > 1)
+    {
+        if (WITH_EDITOR == true)
         {
-            ObjectName = Object->GetReadableName();
+            NameSections.RemoveAt(NameSections.Num() - 1);
+            GeneratedName = FString::Join(NameSections, *Delimeter);
         }
 
         else
         {
-            ObjectName = Object->GetName();
-        }
-
-        FString GeneratedName;
-        TArray<FString> NameSections;
-        ObjectName.ParseIntoArray(NameSections, *Delimeter, true);
-
-        if (NameSections.Num() > 1)
-        {
-            if (WITH_EDITOR == true)
+            for (int32 SectionID = 0; SectionID < 1; SectionID++)
             {
-                NameSections.RemoveAt(NameSections.Num() - 1);
-                GeneratedName = FString::Join(NameSections, *Delimeter);
+                NameSections.RemoveAt(NameSections.Num() - 1 - SectionID);
             }
 
-            else
-            {
-                for (int32 SectionID = 0; SectionID < 1; SectionID++)
-                {
-                    NameSections.RemoveAt(NameSections.Num() - 1 - SectionID);
-                }
-
-                GeneratedName = FString::Join(NameSections, *Delimeter);
-            }
-
-            OutName = GeneratedName;
-
-            return true;
+            GeneratedName = FString::Join(NameSections, *Delimeter);
         }
 
-        else
-        {
-            return false;
-        }
+        OutName = GeneratedName;
+
+        return true;
     }
 
     else
     {
         return false;
     }
-
 }
 
 bool UMeshOperationsBPLibrary::GetComponentByName(FName InName, UObject* Owner, USceneComponent*& OutComponent)
@@ -104,51 +102,57 @@ bool UMeshOperationsBPLibrary::GetComponentByName(FName InName, UObject* Owner, 
     }
 }
 
-void UMeshOperationsBPLibrary::AddStaticMeshCompWithName(FName InName, AActor* SMC_Outer, EComponentMobility::Type SMC_Mobility, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, const FTransform SMC_Relative_Transform, bool& Is_SMC_Created, FName& Out_SMC_Name, UStaticMeshComponent*& Out_SMC)
+bool UMeshOperationsBPLibrary::AddStaticMeshCompWithName(UStaticMeshComponent*& Out_SMC, FName& Out_SMC_Name, FName InName, AActor* SMC_Outer, EAttachmentRule SMC_Attachment_Rule, bool SMC_Manual_Attachment, FTransform SMC_Relative_Transform, EComponentMobility::Type SMC_Mobility)
 {
-    if (SMC_Outer != NULL)
+    if (IsValid(SMC_Outer) == false)
     {
-        if (InName.ToString().IsEmpty() == true)
+        Out_SMC = nullptr;
+        Out_SMC_Name = NAME_None;
+
+        return false;
+    }
+
+    if (InName.ToString().IsEmpty() == true)
+    {
+        InName = NAME_None;
+    }
+
+    //Static Mesh Component Creation.
+    UStaticMeshComponent* StaticMeshComp = NewObject<UStaticMeshComponent>(SMC_Outer, InName);
+
+    if (StaticMeshComp != nullptr)
+    {
+        //Set Mobility of Static Mesh Component.
+        StaticMeshComp->SetMobility(SMC_Mobility);
+
+        //Render Static Mesh Component.
+        StaticMeshComp->RegisterComponent();
+
+        //Get Root Component.
+        USceneComponent* ActorRootForSMC = SMC_Outer->GetRootComponent();
+
+        //Create Attachment Rules.
+        StaticMeshComp->AttachToComponent(ActorRootForSMC, FAttachmentTransformRules(SMC_Attachment_Rule, true));
+
+        if (SMC_Manual_Attachment == true)
         {
-            InName = NAME_None;
+            //Set Realtive Transform.
+            StaticMeshComp->SetRelativeTransform(SMC_Relative_Transform);
         }
-        
-        //Static Mesh Component Creation.
-        UStaticMeshComponent* StaticMeshComp = NewObject<UStaticMeshComponent>(SMC_Outer, InName);
 
-        if (StaticMeshComp != nullptr)
-        {
-            //Set Mobility of Static Mesh Component.
-            StaticMeshComp->SetMobility(SMC_Mobility);
+        //Output Pins.
+        Out_SMC = StaticMeshComp;
+        Out_SMC_Name = InName;
 
-            //Render Static Mesh Component.
-            StaticMeshComp->RegisterComponent();
-
-            //Get Root Component.
-            USceneComponent* ActorRootForSMC = SMC_Outer->GetRootComponent();
-
-            //Create Attachment Rules.
-            StaticMeshComp->AttachToComponent(ActorRootForSMC, FAttachmentTransformRules(SMC_Attachment_Rule, true));
-
-            if (SMC_Manual_Attachment == true)
-            {
-                //Set Realtive Transform.
-                StaticMeshComp->SetRelativeTransform(SMC_Relative_Transform);
-            }
-
-            //Output Pins.
-            Out_SMC = StaticMeshComp;
-            Out_SMC_Name = InName;
-            Is_SMC_Created = StaticMeshComp->IsValidLowLevel();
-        }
+        return true;
     }
 
     else
     {
-        //If outer is not valid, we can not create a static mesh component and program will crash. So we just return false.
         Out_SMC = nullptr;
         Out_SMC_Name = NAME_None;
-        Is_SMC_Created = false;
+
+        return false;
     }
 }
 
@@ -197,7 +201,7 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(FName InName, AActor* SC_Out
     }
 }
 
-bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EComponentMobility::Type PMC_Mobility, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, const FTransform PMC_Relative_Transform)
+bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, FTransform PMC_Relative_Transform, EComponentMobility::Type PMC_Mobility)
 {
     if (IsValid(PMC_Outer) == false)
     {
@@ -237,83 +241,173 @@ bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UPro
 
 bool UMeshOperationsBPLibrary::Convert_SMC_To_PMC(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs)
 {
-    if (IsValid(Target_SMC) && IsValid(Target_PMC) == true)
-    {
-        TArray<FColor> VertexColor;
-        TArray<FVector> Vertices;
-        TArray<int32> Triangles;
-        TArray<FVector> Normals;
-        TArray<FVector2D> UVs;
-        TArray<FProcMeshTangent> Tangents;
-
-        for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
-        {
-            UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
-            Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
-        }
-
-        for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
-        {
-            Target_PMC->SetMaterial(MaterialIndex, Material);
-        }
-
-        return true;
-    }
-
-    else
+    if (IsValid(Target_SMC) && IsValid(Target_PMC) == false)
     {
         return false;
     }
+
+    TArray<FColor> VertexColor;
+    TArray<FVector> Vertices;
+    TArray<int32> Triangles;
+    TArray<FVector> Normals;
+    TArray<FVector2D> UVs;
+    TArray<FProcMeshTangent> Tangents;
+
+    for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
+    {
+        UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
+        Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
+    }
+
+    for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
+    {
+        Target_PMC->SetMaterial(MaterialIndex, Material);
+    }
+
+    return true;
 }
 
-bool UMeshOperationsBPLibrary::Convert_PMC_To_SMC(UStaticMesh*& Out_Sm, UProceduralMeshComponent* In_Pmc)
+void CustomBuild(FMeshDescription& PMC_Description, UStaticMesh*& StaticMesh)
+{
+    TArray<const FMeshDescription*> MeshDescriptions;
+    MeshDescriptions.Add(&PMC_Description);
+
+    TRACE_CPUPROFILER_EVENT_SCOPE(UStaticMesh::BuildFromMeshDescriptions);
+    const int32 NewNumLODs = MeshDescriptions.Num();
+
+    TOptional<FStaticMeshComponentRecreateRenderStateContext> RecreateRenderStateContext;
+
+    bool bNewMesh = true;
+    if (StaticMesh->AreRenderingResourcesInitialized())
+    {
+        bNewMesh = false;
+        const bool bInvalidateLighting = true;
+        const bool bRefreshBounds = true;
+        RecreateRenderStateContext = FStaticMeshComponentRecreateRenderStateContext(StaticMesh, bInvalidateLighting, bRefreshBounds);
+        StaticMesh->ReleaseResources();
+    }
+
+    StaticMesh->SetRenderData(MakeUnique<FStaticMeshRenderData>());
+    StaticMesh->GetRenderData()->AllocateLODResources(NewNumLODs);
+
+    UStaticMesh::FBuildMeshDescriptionsParams Params;
+    FStaticMeshLODResourcesArray& LODResourcesArray = StaticMesh->GetRenderData()->LODResources;
+    for (int32 LODIndex = 0; LODIndex < LODResourcesArray.Num(); ++LODIndex)
+    {
+        LODResourcesArray[LODIndex].IndexBuffer.TrySetAllowCPUAccess(true);
+        if (Params.PerLODOverrides.IsValidIndex(LODIndex))
+        {
+            const UStaticMesh::FBuildMeshDescriptionsLODParams& LODParams = Params.PerLODOverrides[LODIndex];
+            LODResourcesArray[LODIndex].VertexBuffers.StaticMeshVertexBuffer.SetUseHighPrecisionTangentBasis(LODParams.bUseHighPrecisionTangentBasis);
+            LODResourcesArray[LODIndex].VertexBuffers.StaticMeshVertexBuffer.SetUseFullPrecisionUVs(LODParams.bUseFullPrecisionUVs);
+        }
+    }
+
+    for (int32 LODIndex = 0; LODIndex < NewNumLODs; LODIndex++)
+    {
+        check(MeshDescriptions[LODIndex] != nullptr);
+        FStaticMeshLODResources& LODResources = StaticMesh->GetRenderData()->LODResources[LODIndex];
+        StaticMesh->BuildFromMeshDescription(*MeshDescriptions[LODIndex], LODResources);
+    }
+
+    StaticMesh->InitResources();
+
+    // Set up RenderData bounds and LOD data
+    StaticMesh->GetRenderData()->Bounds = MeshDescriptions[0]->GetBounds();
+    StaticMesh->CalculateExtendedBounds();
+
+    for (int32 LOD = 0; LOD < NewNumLODs; ++LOD)
+    {
+        if (true)
+        {
+            const float LODPowerBase = 0.75f;
+            StaticMesh->GetRenderData()->ScreenSize[LOD].Default = FMath::Pow(LODPowerBase, LOD);
+        }
+
+        else
+        {
+            // Possible model for flexible LODs
+            const float MaxDeviation = 100.0f; // specify
+            const float PixelError = UE_SMALL_NUMBER;
+            const float ViewDistance = (MaxDeviation * 960.0f) / PixelError;
+
+            // Generate a projection matrix.
+            const float HalfFOV = UE_PI * 0.25f;
+            const float ScreenWidth = 1920.0f;
+            const float ScreenHeight = 1080.0f;
+            const FPerspectiveMatrix ProjMatrix(HalfFOV, ScreenWidth, ScreenHeight, 1.0f);
+
+            StaticMesh->GetRenderData()->ScreenSize[LOD].Default = ComputeBoundsScreenSize(FVector::ZeroVector, StaticMesh->GetRenderData()->Bounds.SphereRadius, FVector(0.0f, 0.0f, ViewDistance + StaticMesh->GetRenderData()->Bounds.SphereRadius), ProjMatrix);
+        }
+    }
+
+    // Set up physics-related data
+    StaticMesh->CreateBodySetup();
+    check(StaticMesh->GetBodySetup());
+    StaticMesh->GetBodySetup()->InvalidatePhysicsData();
+
+    if (Params.bBuildSimpleCollision)
+    {
+        FKBoxElem BoxElem;
+        BoxElem.Center = StaticMesh->GetRenderData()->Bounds.Origin;
+        BoxElem.X = StaticMesh->GetRenderData()->Bounds.BoxExtent.X * 2.0f;
+        BoxElem.Y = StaticMesh->GetRenderData()->Bounds.BoxExtent.Y * 2.0f;
+        BoxElem.Z = StaticMesh->GetRenderData()->Bounds.BoxExtent.Z * 2.0f;
+        StaticMesh->GetBodySetup()->AggGeom.BoxElems.Add(BoxElem);
+        StaticMesh->GetBodySetup()->CreatePhysicsMeshes();
+    }
+
+    for (int32 LODIndex = 0; LODIndex < NewNumLODs; LODIndex++)
+    {
+        FStaticMeshLODResources& LODResources = StaticMesh->GetRenderData()->LODResources[LODIndex];
+        for (int32 SectionIndex = 0; SectionIndex < LODResources.Sections.Num(); SectionIndex++)
+        {
+            const FStaticMeshSection& StaticMeshSection = LODResources.Sections[SectionIndex];
+            FMeshSectionInfo SectionInfo;
+            SectionInfo.MaterialIndex = StaticMeshSection.MaterialIndex;
+            SectionInfo.bEnableCollision = StaticMeshSection.bEnableCollision;
+            SectionInfo.bCastShadow = StaticMeshSection.bCastShadow;
+            
+            // I think problem is about this.
+            // StaticMesh->GetSectionInfoMap().Set(LODIndex, SectionIndex, SectionInfo);
+        }
+    }
+}
+
+bool UMeshOperationsBPLibrary::Convert_PMC_To_SMC(UStaticMesh*& Out_Sm, UObject* Outer, UProceduralMeshComponent* In_Pmc)
 {
     if (IsValid(In_Pmc) == false)
     {
         return false;
     }
- 
-    FName PMC_Name = FName(*In_Pmc->GetName());
-    UStaticMesh* StaticMesh = NewObject<UStaticMesh>(GetTransientPackage(), PMC_Name, EObjectFlags::RF_Transient);
+    
+    FName PMC_Name = FName(*(In_Pmc->GetName() + "_SM"));
+    UStaticMesh* StaticMesh = NewObject<UStaticMesh>(Outer ? Outer : GetTransientPackage(), PMC_Name, RF_Public);
     StaticMesh->bAllowCPUAccess = true;
     StaticMesh->NeverStream = true;
-    StaticMesh->InitResources();
 
-    FStaticMeshSourceModel& SrcModel = StaticMesh->AddSourceModel();
-    SrcModel.BuildSettings.bRecomputeNormals = true;
-    SrcModel.BuildSettings.bRecomputeTangents = true;
-    SrcModel.BuildSettings.bRemoveDegenerates = true;
-    SrcModel.BuildSettings.bUseHighPrecisionTangentBasis = true;
-    SrcModel.BuildSettings.bUseFullPrecisionUVs = true;
-    SrcModel.BuildSettings.bGenerateLightmapUVs = false;
-    SrcModel.BuildSettings.SrcLightmapIndex = 0;
-    SrcModel.BuildSettings.DstLightmapIndex = 1;
+    FMeshDescription PMC_Description = BuildMeshDescription(In_Pmc);
+    UStaticMeshDescription* SM_Description = StaticMesh->CreateStaticMeshDescription();
+    SM_Description->SetMeshDescription(PMC_Description);
+    StaticMesh->BuildFromStaticMeshDescriptions({ SM_Description }, false);
     
-    FMeshDescription MeshDescription = BuildMeshDescription(In_Pmc);
-    StaticMesh->CreateMeshDescription(0, MoveTemp(MeshDescription));
-    StaticMesh->CommitMeshDescription(0);
-    
+    //CustomBuild(PMC_Description, StaticMesh);
+
+    // Collision
     StaticMesh->CalculateExtendedBounds();
     StaticMesh->SetBodySetup(In_Pmc->ProcMeshBodySetup);
 
-    TSet<UMaterialInterface*> UniqueMaterials;
-    const int32 NumSections = In_Pmc->GetNumSections();
-    for (int32 SectionIdx = 0; SectionIdx < NumSections; SectionIdx++)
+    // Materials
+    TArray<FStaticMaterial> StaticMaterials;
+    TArray<UMaterialInterface*> Materials = In_Pmc->GetMaterials();
+    for (int32 Index_Material = 0; Index_Material < Materials.Num(); Index_Material++)
     {
-        FProcMeshSection* ProcSection = In_Pmc->GetProcMeshSection(SectionIdx);
-        UMaterialInterface* Material = In_Pmc->GetMaterial(SectionIdx);
-        UniqueMaterials.Add(Material);
+        StaticMaterials.Add(FStaticMaterial(Materials[Index_Material]));
     }
-
-    for (auto* Material : UniqueMaterials)
-    {
-        StaticMesh->GetStaticMaterials().Add(FStaticMaterial(Material));
-    }
-
-    StaticMesh->Build();
-    StaticMesh->PostEditChange();
+    StaticMesh->SetStaticMaterials(StaticMaterials);
+    
     StaticMesh->MarkPackageDirty();
-
+    StaticMesh->InitResources();
     Out_Sm = StaticMesh;
 
     return true;
@@ -494,15 +588,11 @@ void UMeshOperationsBPLibrary::RecordTransforms(USceneComponent* AssetRoot, TMap
 
 bool UMeshOperationsBPLibrary::RenameComponent(UPARAM(ref)UObject* Target, UObject* Outer, FName NewName)
 {
-    if (IsValid(Target) == true)
-    {
-        Target->Rename(*(NewName.ToString()), Outer);
-        
-        return true;
-    }
-
-    else
+    if (IsValid(Target) == false)
     {
         return false;
     }
+
+    Target->Rename(*(NewName.ToString()), Outer);
+    return true;
 }
