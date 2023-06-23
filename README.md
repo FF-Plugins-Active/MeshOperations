@@ -9,7 +9,6 @@ You can mail us to reach it.
 - Add Static Mesh Component with Name
 - Add Procedural Mesh Component with Name
 - Create Procedural Mesh from Static Mesh
-- Create Static Mesh from Procedural Mesh
 --------------------------------------------------------------------------------------------
 - Get Class Name
 - Get Object Name of Packaged Build
@@ -21,9 +20,6 @@ You can mail us to reach it.
 - Delete Empty Parents Recursive
 - Rename Object
 --------------------------------------------------------------------------------------------
-STATE:
-- UE5 Ready
-
 PLATFORM SUPPORT:
 - Plugin is for UE5 and Windows platform. We didn't try other platforms.
 
