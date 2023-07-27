@@ -52,9 +52,6 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Convert Static Mesh to ProcMesh", Keywords = "static, procedural, mesh, component, convert"), Category = "MeshOperations")
     static bool Convert_SMC_To_PMC(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "Convert ProcMesh to Static Mesh", Keywords = "static, procedural, mesh, component, convert"), Category = "MeshOperations")
-    static bool Convert_PMC_To_SMC(UStaticMesh*& Out_Sm, UObject* Outer, UProceduralMeshComponent* In_Pmc);
-
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);
 
