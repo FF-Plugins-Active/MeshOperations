@@ -36,8 +36,11 @@ public class MeshOperations : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"ProceduralMeshComponent",
-                "MeshDescription"
+                "GLTFExporter",
+                "RHI",
+                "RenderCore",
+                "MeshDescription",
+                "ProceduralMeshComponent",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

@@ -6,10 +6,6 @@
 #include "Math/Vector.h"
 #include "Kismet/KismetMathLibrary.h"
 
-// Async Functions.
-#include "Async/Async.h" 
-#include "Async/IAsyncProgress.h"
-
 // Components.
 #include "UObject/Object.h"
 #include "Components/SceneComponent.h"
@@ -22,6 +18,13 @@
 #include "MeshDescription.h"
 #include "StaticMeshDescription.h"
 #include "ProceduralMeshConversion.h"
+
+// GLTF Exporter
+#include "Builders/GLTFBuilder.h"
+#include "UserData/GLTFMaterialUserData.h"
+
+#include "PhysicsEngine/BodySetup.h"
+#include "Rendering/PositionVertexBuffer.h"
 
 #include "MeshOperations.h"
 
@@ -448,5 +451,257 @@ bool UMeshOperationsBPLibrary::RenameComponent(UPARAM(ref)UObject* Target, UObje
     }
 
     Target->Rename(*(NewName.ToString()), Outer);
+    return true;
+}
+
+void UMeshOperationsBPLibrary::ExportLevelGLTF(bool bEnableQuantization, bool bResetLocation, bool bResetRotation, bool bResetScale, const FString ExportPath, TSet<AActor*> TargetActors, FDelegateGLTFExport DelegateGLTFExport)
+{
+    AsyncTask(ENamedThreads::AnyNormalThreadNormalTask, [DelegateGLTFExport, bEnableQuantization, bResetLocation, bResetRotation, bResetScale, ExportPath, TargetActors]()
+        {
+            TArray<FVector> Array_Locations;
+            TArray<FRotator> Array_Rotations;
+            TArray<FVector> Array_Scales;
+
+            for (int32 ActorIndex = 0; ActorIndex < TargetActors.Num(); ActorIndex++)
+            {
+                if (bResetLocation == true)
+                {
+                    Array_Locations.Add(TargetActors.Array()[ActorIndex]->GetRootComponent()->GetComponentLocation());
+                    TargetActors.Array()[ActorIndex]->GetRootComponent()->SetWorldLocation(FVector(0.0f), false, nullptr, ETeleportType::None);
+                }
+
+                if (bResetRotation == true)
+                {
+                    Array_Rotations.Add(TargetActors.Array()[ActorIndex]->GetRootComponent()->GetComponentRotation());
+                    TargetActors.Array()[ActorIndex]->GetRootComponent()->SetWorldRotation(FQuat(0.0f), false, nullptr, ETeleportType::None);
+                }
+
+                if (bResetScale == true)
+                {
+                    Array_Scales.Add(TargetActors.Array()[ActorIndex]->GetRootComponent()->GetComponentScale());
+                    TargetActors.Array()[ActorIndex]->GetRootComponent()->SetWorldScale3D(FVector(1.0f));
+                }
+            }
+
+            AsyncTask(ENamedThreads::GameThread, [DelegateGLTFExport, bEnableQuantization, bResetLocation, bResetRotation, bResetScale, Array_Locations, Array_Rotations, Array_Scales, ExportPath, TargetActors]()
+                {
+                    UGLTFExportOptions* ExportOptions = NewObject<UGLTFExportOptions>();
+                    ExportOptions->ResetToDefault();
+                    ExportOptions->bExportProxyMaterials = true;
+                    ExportOptions->bExportVertexColors = true;
+                    ExportOptions->bUseMeshQuantization = bEnableQuantization;
+
+                    FGLTFExportMessages ExportMessages;
+                    bool bIsExportSuccessful = UGLTFExporter::ExportToGLTF(GEngine->GetCurrentPlayWorld(), ExportPath, ExportOptions, TargetActors, ExportMessages);
+
+                    for (int32 ActorIndex = 0; ActorIndex < TargetActors.Num(); ActorIndex++)
+                    {
+                        if (bResetLocation == true)
+                        {
+                            TargetActors.Array()[ActorIndex]->GetRootComponent()->SetWorldLocation(Array_Locations[ActorIndex], false, nullptr, ETeleportType::None);
+                        }
+
+                        if (bResetRotation == true)
+                        {
+                            TargetActors.Array()[ActorIndex]->GetRootComponent()->SetWorldRotation(Array_Rotations[ActorIndex], false, nullptr, ETeleportType::None);
+                        }
+
+                        if (bResetScale == true)
+                        {
+                            TargetActors.Array()[ActorIndex]->GetRootComponent()->SetWorldScale3D(Array_Scales[ActorIndex]);
+                        }
+                    }
+
+                    DelegateGLTFExport.ExecuteIfBound(bIsExportSuccessful, ExportMessages);
+                }
+            );
+        }
+    );
+}
+
+bool UMeshOperationsBPLibrary::GetVerticesLocations(UStaticMeshComponent* In_SMC, int32 LOD_Index, TArray<FVector>& OutVertices)
+{
+    if (IsValid(In_SMC) == true)
+    {
+        FPositionVertexBuffer* PositionVertexBuffer = &In_SMC->GetStaticMesh()->GetRenderData()->LODResources[LOD_Index].VertexBuffers.PositionVertexBuffer;
+
+        FVector3d EachVertices;
+        for (uint32 VertexIndex = 0; VertexIndex < PositionVertexBuffer->GetNumVertices(); VertexIndex++)
+        {
+            EachVertices = In_SMC->GetComponentTransform().TransformPosition((FVector3d)PositionVertexBuffer->VertexPosition(VertexIndex));
+            OutVertices.Add(EachVertices);
+        }
+
+        return true;
+    }
+
+    else
+    {
+        return false;
+    }
+}
+
+bool UMeshOperationsBPLibrary::SetPivotLocation(UPARAM(ref) UStaticMeshComponent*& In_SMC, FVector PivotLocation, UObject* Outer)
+{
+    if (IsValid(In_SMC) == false)
+    {
+        return false;
+    }
+
+    UStaticMesh* StaticMesh = In_SMC->GetStaticMesh();
+
+    if (!StaticMesh)
+    {
+        return false;
+    }
+
+    if (!StaticMesh->bAllowCPUAccess)
+    {
+        return false;
+    }
+
+    FStaticMeshRenderData* RenderData = StaticMesh->GetRenderData();
+
+    if (!RenderData)
+    {
+        return false;
+    }
+
+    FVector PivotDelta = (PivotLocation - In_SMC->GetComponentLocation()) * (-1);
+
+    UStaticMesh* NewStaticMesh = NewObject<UStaticMesh>(Outer ? Outer : GetTransientPackage(), NAME_None, RF_Public);
+    NewStaticMesh->bAllowCPUAccess = true;
+    NewStaticMesh->NeverStream = true;
+
+    NewStaticMesh->SetRenderData(MakeUnique<FStaticMeshRenderData>());
+    FStaticMeshRenderData* NewRenderData = NewStaticMesh->GetRenderData();
+
+    NewRenderData->AllocateLODResources(RenderData->LODResources.Num());
+
+    for (int32 LODIndex = 0; LODIndex < NewRenderData->LODResources.Num(); LODIndex++)
+    {
+        FStaticMeshLODResources& OriginalLOD = RenderData->LODResources[LODIndex];
+        FStaticMeshLODResources& NewLOD = NewRenderData->LODResources[LODIndex];
+
+        TArray<uint32> Indices;
+        OriginalLOD.IndexBuffer.GetCopy(Indices);
+        NewLOD.IndexBuffer.SetIndices(Indices, OriginalLOD.IndexBuffer.Is32Bit() ? EIndexBufferStride::Force32Bit : EIndexBufferStride::Force16Bit);
+
+        int32 NumPositions = OriginalLOD.VertexBuffers.PositionVertexBuffer.GetNumVertices();
+        NewLOD.VertexBuffers.PositionVertexBuffer.Init(NumPositions);
+        for (int32 PositionIndex = 0; PositionIndex < NumPositions; PositionIndex++)
+        {
+            NewLOD.VertexBuffers.PositionVertexBuffer.VertexPosition(PositionIndex) = OriginalLOD.VertexBuffers.PositionVertexBuffer.VertexPosition(PositionIndex) + FVector3f(PivotDelta);
+        }
+
+        uint32 NumVertices = OriginalLOD.VertexBuffers.StaticMeshVertexBuffer.GetNumVertices();
+
+        NewLOD.VertexBuffers.StaticMeshVertexBuffer.Init(NumVertices, OriginalLOD.VertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords());
+
+        for (uint32 VertexIndex = 0; VertexIndex < NumVertices; VertexIndex++)
+        {
+            FVector4f TangentX = OriginalLOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentX(VertexIndex);
+            FVector4f TangentY = OriginalLOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentY(VertexIndex);
+            FVector4f TangentZ = OriginalLOD.VertexBuffers.StaticMeshVertexBuffer.VertexTangentZ(VertexIndex);
+            NewLOD.VertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex, TangentX, TangentY, TangentZ);
+            for (uint32 UVIndex = 0; UVIndex < OriginalLOD.VertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords(); UVIndex++)
+            {
+                FVector2f UV = OriginalLOD.VertexBuffers.StaticMeshVertexBuffer.GetVertexUV(VertexIndex, UVIndex);
+                NewLOD.VertexBuffers.StaticMeshVertexBuffer.SetVertexUV(VertexIndex, UVIndex, UV);
+            }
+        }
+
+        TArray<FColor> Colors;
+        OriginalLOD.VertexBuffers.ColorVertexBuffer.GetVertexColors(Colors);
+        if (Colors.Num() > 0)
+        {
+            NewLOD.VertexBuffers.ColorVertexBuffer.InitFromColorArray(Colors);
+        }
+
+        for (int32 SectionIndex = 0; SectionIndex < OriginalLOD.Sections.Num(); SectionIndex++)
+        {
+            FStaticMeshSection& OriginalSection = OriginalLOD.Sections[SectionIndex];
+            FStaticMeshSection& NewSection = NewLOD.Sections.AddDefaulted_GetRef();
+            // copy section configuration
+            NewSection = OriginalSection;
+        }
+    }
+
+    NewStaticMesh->SetStaticMaterials(StaticMesh->GetStaticMaterials());
+
+    NewStaticMesh->InitResources();
+
+    NewRenderData->Bounds = RenderData->Bounds;
+    NewRenderData->Bounds.Origin += PivotDelta;
+
+    NewStaticMesh->CalculateExtendedBounds();
+    NewStaticMesh->CreateBodySetup();
+    NewStaticMesh->GetBodySetup()->CollisionTraceFlag = StaticMesh->GetBodySetup()->CollisionTraceFlag;
+    NewStaticMesh->GetBodySetup()->InvalidatePhysicsData();
+    NewStaticMesh->GetBodySetup()->AggGeom = StaticMesh->GetBodySetup()->AggGeom;
+
+    for (FKBoxElem& Box : NewStaticMesh->GetBodySetup()->AggGeom.BoxElems)
+    {
+        Box.Center += PivotDelta;
+    }
+
+    for (FKSphereElem& Sphere : NewStaticMesh->GetBodySetup()->AggGeom.SphereElems)
+    {
+        Sphere.Center += PivotDelta;
+    }
+
+    for (FKSphylElem& Sphyle : NewStaticMesh->GetBodySetup()->AggGeom.SphylElems)
+    {
+        Sphyle.Center += PivotDelta;
+    }
+
+    for (FKConvexElem& Convex : NewStaticMesh->GetBodySetup()->AggGeom.ConvexElems)
+    {
+        for (FVector& Vertex : Convex.VertexData)
+        {
+            Vertex += PivotDelta;
+        }
+        Convex.UpdateElemBox();
+    }
+
+    NewStaticMesh->GetBodySetup()->CreatePhysicsMeshes();
+
+    In_SMC->SetStaticMesh(NewStaticMesh);
+    In_SMC->AddWorldOffset(PivotLocation - In_SMC->Bounds.Origin);
+    return true;
+}
+
+bool UMeshOperationsBPLibrary::MovePivotsToCenter(USceneComponent* RootComponent, TArray<FString>& ErroredMeshes)
+{
+    if (IsValid(RootComponent) == false)
+    {
+        return false;
+    }
+
+    TArray<USceneComponent*> Array_Children;
+    RootComponent->GetChildrenComponents(true, Array_Children);
+
+    int32 StaticMeshCount = 0;
+
+    for (int32 ChildIndex = 0; ChildIndex < Array_Children.Num(); ChildIndex++)
+    {
+        UStaticMeshComponent* EachMesh = Cast<UStaticMeshComponent>(Array_Children[ChildIndex]);
+
+        if (IsValid(EachMesh) == true)
+        {
+            if (UMeshOperationsBPLibrary::SetPivotLocation(EachMesh, EachMesh->Bounds.Origin, EachMesh) == false)
+            {
+                ErroredMeshes.Add(EachMesh->GetReadableName());
+            }
+
+            StaticMeshCount += 1;
+        }
+    }
+
+    if (ErroredMeshes.Num() == StaticMeshCount)
+    {
+        return false;
+    }
+
     return true;
 }
