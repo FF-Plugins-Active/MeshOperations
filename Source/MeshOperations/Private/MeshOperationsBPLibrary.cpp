@@ -204,7 +204,7 @@ void UMeshOperationsBPLibrary::AddSceneCompWithName(FName InName, AActor* SC_Out
     }
 }
 
-bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, FTransform PMC_Relative_Transform, EComponentMobility::Type PMC_Mobility)
+bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, bool bUseComplexCollisionAsSimple, FTransform PMC_Relative_Transform, EComponentMobility::Type PMC_Mobility)
 {
     if (IsValid(PMC_Outer) == false)
     {
@@ -226,6 +226,7 @@ bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UPro
 
     ProcMeshComp->SetMobility(PMC_Mobility);
     ProcMeshComp->bUseAsyncCooking = bUseAsyncCooking;
+    ProcMeshComp->bUseComplexAsSimpleCollision = bUseComplexCollisionAsSimple;
     ProcMeshComp->RegisterComponent();
     ProcMeshComp->AttachToComponent(PMC_Outer->GetRootComponent(), FAttachmentTransformRules(PMC_Attachment_Rule, true));
 
@@ -242,32 +243,118 @@ bool UMeshOperationsBPLibrary::AddProcMeshCompWithName(FName& Out_PMC_Name, UPro
     return true;
 }
 
-bool UMeshOperationsBPLibrary::Convert_SMC_To_PMC(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs)
+void UMeshOperationsBPLibrary::GenerateBoxMeshAtBottom(FVector BoxRadius, TArray<FVector>&Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents)
 {
-    if (IsValid(Target_SMC) && IsValid(Target_PMC) == false)
+    // Generate verts
+    FVector BoxVerts[8];
+    BoxVerts[0] = FVector(-BoxRadius.X, BoxRadius.Y, BoxRadius.Z);
+    BoxVerts[1] = FVector(BoxRadius.X, BoxRadius.Y, BoxRadius.Z);
+    BoxVerts[2] = FVector(BoxRadius.X, -BoxRadius.Y, BoxRadius.Z);
+    BoxVerts[3] = FVector(-BoxRadius.X, -BoxRadius.Y, BoxRadius.Z);
+
+    BoxVerts[4] = FVector(-BoxRadius.X, BoxRadius.Y, 0);
+    BoxVerts[5] = FVector(BoxRadius.X, BoxRadius.Y, 0);
+    BoxVerts[6] = FVector(BoxRadius.X, -BoxRadius.Y, 0);
+    BoxVerts[7] = FVector(-BoxRadius.X, -BoxRadius.Y, 0);
+
+    // Generate triangles (from quads)
+    Triangles.Reset();
+
+    const int32 NumVerts = 24; // 6 faces x 4 verts per face
+
+    Vertices.Reset();
+    Vertices.AddUninitialized(NumVerts);
+
+    Normals.Reset();
+    Normals.AddUninitialized(NumVerts);
+
+    Tangents.Reset();
+    Tangents.AddUninitialized(NumVerts);
+
+    Vertices[0] = BoxVerts[0];
+    Vertices[1] = BoxVerts[1];
+    Vertices[2] = BoxVerts[2];
+    Vertices[3] = BoxVerts[3];
+    UKismetProceduralMeshLibrary::ConvertQuadToTriangles(Triangles, 0, 1, 2, 3);
+    Normals[0] = Normals[1] = Normals[2] = Normals[3] = FVector(0, 0, 1);
+    Tangents[0] = Tangents[1] = Tangents[2] = Tangents[3] = FProcMeshTangent(0.f, -1.f, 0.f);
+
+    Vertices[4] = BoxVerts[4];
+    Vertices[5] = BoxVerts[0];
+    Vertices[6] = BoxVerts[3];
+    Vertices[7] = BoxVerts[7];
+    UKismetProceduralMeshLibrary::ConvertQuadToTriangles(Triangles, 4, 5, 6, 7);
+    Normals[4] = Normals[5] = Normals[6] = Normals[7] = FVector(-1, 0, 0);
+    Tangents[4] = Tangents[5] = Tangents[6] = Tangents[7] = FProcMeshTangent(0.f, -1.f, 0.f);
+
+    Vertices[8] = BoxVerts[5];
+    Vertices[9] = BoxVerts[1];
+    Vertices[10] = BoxVerts[0];
+    Vertices[11] = BoxVerts[4];
+    UKismetProceduralMeshLibrary::ConvertQuadToTriangles(Triangles, 8, 9, 10, 11);
+    Normals[8] = Normals[9] = Normals[10] = Normals[11] = FVector(0, 1, 0);
+    Tangents[8] = Tangents[9] = Tangents[10] = Tangents[11] = FProcMeshTangent(-1.f, 0.f, 0.f);
+
+    Vertices[12] = BoxVerts[6];
+    Vertices[13] = BoxVerts[2];
+    Vertices[14] = BoxVerts[1];
+    Vertices[15] = BoxVerts[5];
+    UKismetProceduralMeshLibrary::ConvertQuadToTriangles(Triangles, 12, 13, 14, 15);
+    Normals[12] = Normals[13] = Normals[14] = Normals[15] = FVector(1, 0, 0);
+    Tangents[12] = Tangents[13] = Tangents[14] = Tangents[15] = FProcMeshTangent(0.f, 1.f, 0.f);
+
+    Vertices[16] = BoxVerts[7];
+    Vertices[17] = BoxVerts[3];
+    Vertices[18] = BoxVerts[2];
+    Vertices[19] = BoxVerts[6];
+    UKismetProceduralMeshLibrary::ConvertQuadToTriangles(Triangles, 16, 17, 18, 19);
+    Normals[16] = Normals[17] = Normals[18] = Normals[19] = FVector(0, -1, 0);
+    Tangents[16] = Tangents[17] = Tangents[18] = Tangents[19] = FProcMeshTangent(1.f, 0.f, 0.f);
+
+    Vertices[20] = BoxVerts[7];
+    Vertices[21] = BoxVerts[6];
+    Vertices[22] = BoxVerts[5];
+    Vertices[23] = BoxVerts[4];
+    UKismetProceduralMeshLibrary::ConvertQuadToTriangles(Triangles, 20, 21, 22, 23);
+    Normals[20] = Normals[21] = Normals[22] = Normals[23] = FVector(0, 0, -1);
+    Tangents[20] = Tangents[21] = Tangents[22] = Tangents[23] = FProcMeshTangent(0.f, 1.f, 0.f);
+
+    // UVs
+    UVs.Reset();
+    UVs.AddUninitialized(NumVerts);
+
+    UVs[0] = UVs[4] = UVs[8] = UVs[12] = UVs[16] = UVs[20] = FVector2D(0.f, 0.f);
+    UVs[1] = UVs[5] = UVs[9] = UVs[13] = UVs[17] = UVs[21] = FVector2D(0.f, 1.f);
+    UVs[2] = UVs[6] = UVs[10] = UVs[14] = UVs[18] = UVs[22] = FVector2D(1.f, 1.f);
+    UVs[3] = UVs[7] = UVs[11] = UVs[15] = UVs[19] = UVs[23] = FVector2D(1.f, 0.f);
+}
+
+void UMeshOperationsBPLibrary::GenerateCylinderMesh(double Radius, double ArcSize, TArray<FVector2D>& Vertices, TArray<int32>& Triangles)
+{
+    TArray<FVector2D> TempVertices;
+    TArray<int32> TempTriangles;
+
+    const int32 NumSegments_Cap = FMath::RoundToInt(ArcSize / 2.0f);
+
+    TempVertices.Add(FVector2D(0, 0));
+    for (int32 Index = 0; Index < NumSegments_Cap + 2; ++Index)
     {
-        return false;
+        const double CurrentAngle = FMath::DegreesToRadians(ArcSize * Index / NumSegments_Cap);
+        const FVector2D EdgeDirection(FMath::Cos(CurrentAngle), FMath::Sin(CurrentAngle));
+        const FVector2D OuterEdge(Radius * EdgeDirection);
+
+        TempVertices.Add(FVector2D(0, 0) + FVector2D(OuterEdge.X, OuterEdge.Y));
     }
 
-    TArray<FColor> VertexColor;
-    TArray<FVector> Vertices;
-    TArray<int32> Triangles;
-    TArray<FVector> Normals;
-    TArray<FVector2D> UVs;
-    TArray<FProcMeshTangent> Tangents;
-
-    for (int32 SectionIndex = 0; SectionIndex < Target_SMC->GetStaticMesh()->GetNumSections(LODs); SectionIndex++)
+    for (int32 i = 0; i <= NumSegments_Cap; ++i)
     {
-        UKismetProceduralMeshLibrary::GetSectionFromStaticMesh(Target_SMC->GetStaticMesh(), LODs, SectionIndex, Vertices, Triangles, Normals, UVs, Tangents);
-        Target_PMC->CreateMeshSection(SectionIndex, Vertices, Triangles, Normals, UVs, VertexColor, Tangents, false);
+        TempTriangles.Add(0);
+        TempTriangles.Add(i);
+        TempTriangles.Add(i + 1);
     }
 
-    for (int32 MaterialIndex = 0; MaterialIndex < Target_SMC->GetNumMaterials(); MaterialIndex++)
-    {
-        Target_PMC->SetMaterial(MaterialIndex, Material);
-    }
-
-    return true;
+    Vertices = TempVertices;
+    Triangles = TempTriangles;
 }
 
 void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)

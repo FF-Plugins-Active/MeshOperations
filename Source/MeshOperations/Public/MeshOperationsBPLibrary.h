@@ -33,10 +33,13 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     static void AddSceneCompWithName(FName InName, AActor* SC_Outer, EComponentMobility::Type SC_Mobility, EAttachmentRule SC_Attachment_Rule, bool SC_Manual_Attachment, FTransform SC_Relative_Transform, bool& Is_SC_Created, FName& Out_SC_Name, USceneComponent*& Out_SC);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "AddProcMeshCompWithName", Keywords = "procedural,mesh,component,name"), Category = "MeshOperations")
-    static bool AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, FTransform PMC_Relative_Transform, EComponentMobility::Type PMC_Mobility = EComponentMobility::Movable);
+    static bool AddProcMeshCompWithName(FName& Out_PMC_Name, UProceduralMeshComponent*& Out_PMC, AActor* PMC_Outer, FName InName, EAttachmentRule PMC_Attachment_Rule, bool PMC_Manual_Attachment, bool bUseAsyncCooking, bool bUseComplexCollisionAsSimple, FTransform PMC_Relative_Transform, EComponentMobility::Type PMC_Mobility = EComponentMobility::Movable);
 
-    UFUNCTION(BlueprintCallable, meta = (DispayName = "Convert Static Mesh to ProcMesh", Keywords = "static, procedural, mesh, component, convert"), Category = "MeshOperations")
-    static bool Convert_SMC_To_PMC(UStaticMeshComponent* Target_SMC, UProceduralMeshComponent* Target_PMC, UMaterial* Material, int32 LODs);
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Generate Box Mesh At Bottom", Keywords = "generate, box, mesh, at, bottom"), Category = "MeshOperations")
+    static void GenerateBoxMeshAtBottom(FVector BoxRadius, TArray<FVector>&Vertices, TArray<int32>&Triangles, TArray<FVector>&Normals, TArray<FVector2D>&UVs, TArray<FProcMeshTangent>&Tangents);
+
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Generate Pie", Keywords = "generate, box, mesh, at, bottom"), Category = "MeshOperations")
+    static void GenerateCylinderMesh(double Radius, double ArcSize, TArray<FVector2D>& Vertices, TArray<int32>& Triangles);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);
@@ -59,13 +62,13 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
     UFUNCTION(BlueprintCallable, meta = (DisplayName = "Export Level As GLTF", ToolTip = "Description.", Keywords = "level, export, gltf, glb"), Category = "File Converters|GLTF")
     static void ExportLevelGLTF(bool bEnableQuantization, bool bResetLocation, bool bResetRotation, bool bResetScale, const FString ExportPath, TSet<AActor*> TargetActors, FDelegateGLTFExport DelegateGLTFExport);
 
-    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Vertices Locations", Keywords = "get, vertex, vertices, locations, positions"), Category = "Vertex Operations")
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Vertices Locations", Keywords = "get, vertex, vertices, locations, positions"), Category = "MeshOperations")
     static bool GetVerticesLocations(UStaticMeshComponent* In_SMC, int32 LOD_Index, TArray<FVector>& OutVertices);
 
-    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Set Pivot Location", Keywords = "set, move, pivot, location, static, mesh"), Category = "Vertex Operations")
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Set Pivot Location", Keywords = "set, move, pivot, location, static, mesh"), Category = "MeshOperations")
     static bool SetPivotLocation(UPARAM(ref) UStaticMeshComponent*& In_SMC, FVector PivotLocation, UObject* Outer);
 
-    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Move Pivots To Center", Keywords = "set, move, pivot, location, static, mesh, recursive, center"), Category = "Vertex Operations")
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Move Pivots To Center", Keywords = "set, move, pivot, location, static, mesh, recursive, center"), Category = "MeshOperations")
     static bool MovePivotsToCenter(USceneComponent* RootComponent, TArray<FString>& ErroredMeshes);
 
 };
