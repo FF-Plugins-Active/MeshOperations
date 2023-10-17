@@ -357,6 +357,37 @@ void UMeshOperationsBPLibrary::GenerateCylinderMesh(double Radius, double ArcSiz
     Triangles = TempTriangles;
 }
 
+bool UMeshOperationsBPLibrary::GenerateWave(bool bIsSin, double Amplitude, double RestHeight, double WaveLenght, TArray<FVector2D>& Out_Vertices, int32& EdgeTriangles)
+{
+    if (Amplitude > RestHeight)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Amplitude has to be bigger than Rest Height."));
+        return false;
+    }
+
+    TArray<FVector2D> Vertices;
+    int32 TruncatedLenght = UKismetMathLibrary::FTrunc(WaveLenght);
+    for (int32 Index_Angles = 0; Index_Angles < TruncatedLenght; Index_Angles++)
+    {
+        double Value_Trigonometric = bIsSin ? UKismetMathLibrary::DegSin(Index_Angles) : UKismetMathLibrary::DegCos(Index_Angles);
+        double Value_Y = (Value_Trigonometric * Amplitude) + RestHeight;
+        FVector2D VertexLocation = FVector2D((double)Index_Angles, Value_Y);
+
+        Vertices.Add(VertexLocation);
+    }
+
+    Algo::Reverse(Vertices);
+
+    Vertices.Insert(FVector2D(0.f, 0.f), 0);           // Bottom start location.
+    Vertices.Insert(FVector2D(WaveLenght, 0.f), 1);    // Bottom end location.
+   
+    Out_Vertices = Vertices;
+
+    EdgeTriangles = (TruncatedLenght * 2) + 3;
+
+    return true;
+}
+
 void UMeshOperationsBPLibrary::DeleteEmptyRoots(USceneComponent* AssetRoot)
 {
     // Initial while variable
