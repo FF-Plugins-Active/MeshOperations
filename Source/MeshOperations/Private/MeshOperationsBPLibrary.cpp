@@ -329,7 +329,7 @@ void UMeshOperationsBPLibrary::GenerateBoxMeshAtBottom(FVector BoxRadius, TArray
     UVs[3] = UVs[7] = UVs[11] = UVs[15] = UVs[19] = UVs[23] = FVector2D(1.f, 0.f);
 }
 
-void UMeshOperationsBPLibrary::GenerateCylinderMesh(double Radius, double ArcSize, TArray<FVector2D>& Vertices, TArray<int32>& Triangles)
+void UMeshOperationsBPLibrary::GenerateCylinderMesh(double Radius, double ArcSize, TArray<FVector2D>& Vertices, int32& EdgeTriangles)
 {
     TArray<FVector2D> TempVertices;
     TArray<int32> TempTriangles;
@@ -346,15 +346,13 @@ void UMeshOperationsBPLibrary::GenerateCylinderMesh(double Radius, double ArcSiz
         TempVertices.Add(FVector2D(0, 0) + FVector2D(OuterEdge.X, OuterEdge.Y));
     }
 
-    for (int32 i = 0; i <= NumSegments_Cap; ++i)
-    {
-        TempTriangles.Add(0);
-        TempTriangles.Add(i);
-        TempTriangles.Add(i + 1);
-    }
-
     Vertices = TempVertices;
-    Triangles = TempTriangles;
+
+    int32 TruncatedSize = UKismetMathLibrary::FTrunc(ArcSize);
+    double Remainder = 0;
+    UKismetMathLibrary::FMod(TruncatedSize, 2, Remainder);
+    bool bIsEven = (Remainder / 2) == 0 ? true : false;
+    EdgeTriangles = TruncatedSize + (bIsEven ? 3 : 4) + 2; // +2 is for inside triangles.   
 }
 
 bool UMeshOperationsBPLibrary::GenerateWave(bool bIsSin, double Amplitude, double RestHeight, double WaveLenght, TArray<FVector2D>& Out_Vertices, int32& EdgeTriangles)
