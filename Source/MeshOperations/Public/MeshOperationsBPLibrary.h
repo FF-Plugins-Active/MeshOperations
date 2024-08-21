@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "Exporters/GLTFExporter.h"					// FDelegateGLTFExport -> Export Messages.
+#include "MeshOps_Includes.h"
 #include "MeshOperationsBPLibrary.generated.h"
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -43,6 +43,9 @@ class UMeshOperationsBPLibrary : public UBlueprintFunctionLibrary
 
     UFUNCTION(BlueprintCallable, meta = (DisplayName = "Generate Wave", Keywords = "generate, mesh, wave"), Category = "MeshOperations")
     static bool GenerateWave(bool bIsSin, double Amplitude, double RestHeight, double WaveLenght, TArray<FVector2D>& Out_Vertices, int32& EdgeTriangles);
+
+    UFUNCTION(BlueprintCallable)
+    static bool GenerateMeshFromVertices(UStaticMesh*& Out_Mesh, TArray<FVector> In_Vertices, TArray<FVector> In_Normals, TArray<FVector2D> In_UVs, TArray<int32> In_Tris);
 
     UFUNCTION(BlueprintCallable, meta = (DispayName = "Delete Empty Roots", Keywords = "optimize,hierarchy,empty,root,roots"), Category = "MeshOperations")
     static void DeleteEmptyRoots(USceneComponent* AssetRoot);

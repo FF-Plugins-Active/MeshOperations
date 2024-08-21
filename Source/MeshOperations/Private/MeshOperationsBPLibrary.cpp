@@ -1,31 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "MeshOperationsBPLibrary.h"
-
-// Math Functions.
-#include "Math/Vector.h"
-#include "Kismet/KismetMathLibrary.h"
-
-// Components.
-#include "UObject/Object.h"
-#include "Components/SceneComponent.h"
-#include "Components/ActorComponent.h"
-#include "Components/StaticMeshComponent.h"
-#include "ProceduralMeshComponent.h"
-#include "KismetProceduralMeshLibrary.h"
-
-// Procedural to Static Mesh
-#include "MeshDescription.h"
-#include "StaticMeshDescription.h"
-#include "ProceduralMeshConversion.h"
-
-// GLTF Exporter
-#include "Builders/GLTFBuilder.h"
-#include "UserData/GLTFMaterialUserData.h"
-
-#include "PhysicsEngine/BodySetup.h"
-#include "Rendering/PositionVertexBuffer.h"
-
 #include "MeshOperations.h"
 
 UMeshOperationsBPLibrary::UMeshOperationsBPLibrary(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -327,6 +302,8 @@ void UMeshOperationsBPLibrary::GenerateBoxMeshAtBottom(FVector BoxRadius, TArray
     UVs[1] = UVs[5] = UVs[9] = UVs[13] = UVs[17] = UVs[21] = FVector2D(0.f, 1.f);
     UVs[2] = UVs[6] = UVs[10] = UVs[14] = UVs[18] = UVs[22] = FVector2D(1.f, 1.f);
     UVs[3] = UVs[7] = UVs[11] = UVs[15] = UVs[19] = UVs[23] = FVector2D(1.f, 0.f);
+
+    UStaticMesh* StaticMesh = nullptr;
 }
 
 void UMeshOperationsBPLibrary::GenerateCylinderMesh(double Radius, double ArcSize, TArray<FVector2D>& Vertices, int32& EdgeTriangles)
@@ -383,6 +360,59 @@ bool UMeshOperationsBPLibrary::GenerateWave(bool bIsSin, double Amplitude, doubl
 
     EdgeTriangles = (TruncatedLenght * 2) + 3;
 
+    return true;
+}
+
+bool UMeshOperationsBPLibrary::GenerateMeshFromVertices(UStaticMesh*& Out_Mesh, TArray<FVector> In_Vertices, TArray<FVector> In_Normals, TArray<FVector2D> In_UVs, TArray<int32> In_Tris)
+{
+    if (In_Vertices.IsEmpty())
+    {
+        return false;
+    }
+    
+    UStaticMeshDescription* StaticMeshDesc = UStaticMesh::CreateStaticMeshDescription();
+    
+    FMeshDescriptionBuilder MeshDescBuilder;
+    MeshDescBuilder.SetMeshDescription(&StaticMeshDesc->GetMeshDescription());
+    MeshDescBuilder.EnablePolyGroups();
+    MeshDescBuilder.SetNumUVLayers(1);
+
+    const size_t NumVertices = In_Vertices.Num();
+    TArray<FVertexInstanceID> VertexInstances;
+    VertexInstances.AddUninitialized(NumVertices);
+
+    for (unsigned int Index = 0; Index < NumVertices; Index++)
+    {
+        const FVertexID VertexID = MeshDescBuilder.AppendVertex(In_Vertices[Index]);
+        const FVertexInstanceID Instance = MeshDescBuilder.AppendInstance(VertexID);
+        VertexInstances[Index] = Instance;
+
+        if (!In_Normals.IsEmpty())
+        {
+            MeshDescBuilder.SetInstanceNormal(Instance, In_Normals[Index]);
+        }
+
+        if (!In_UVs.IsEmpty())
+        {
+            MeshDescBuilder.SetInstanceUV(Instance, In_UVs[Index], 0);
+        }
+    }
+
+    const FPolygonGroupID PolygonGroup = MeshDescBuilder.AppendPolygonGroup();
+
+    // At least one material must be added
+    UStaticMesh* StaticMesh = NewObject<UStaticMesh>();
+    StaticMesh->GetStaticMaterials().Add(FStaticMaterial());
+
+    UStaticMesh::FBuildMeshDescriptionsParams MeshDescriptionsParams;
+    MeshDescriptionsParams.bBuildSimpleCollision = true;
+
+    // Build static mesh
+    TArray<const FMeshDescription*> MeshDescriptions;
+    MeshDescriptions.Emplace(&StaticMeshDesc->GetMeshDescription());
+    StaticMesh->BuildFromMeshDescriptions(MeshDescriptions, MeshDescriptionsParams);
+
+    Out_Mesh = StaticMesh;
     return true;
 }
 
