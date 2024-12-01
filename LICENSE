@@ -1,0 +1,51 @@
+# Business Source License 1.1
+
+This Business Source License (the "License") applies to the source code in this repository, as specified by [ffreality] (the "Licensor"). 
+
+## 1. Licensed Grant
+Subject to the terms of this License, **the Licensor** hereby grants you, free of charge,
+- the right to use in commercial, non-commercial and academic products,
+- **reproduce, modify, and create derivative works** of **FF_PugiXml** plugin in this repository (the "Plugin"),
+solely for non-restricted use cases.
+
+Reproduce, modify and create derivate works mean merely create a **fork** of this repository while pointing reference to original repository and preserving license terms **without selling** it directly.
+
+## 2. Restricted Use
+You may **not** use **the Plugin** to provide or operate a product or service that competes directly with **the Plugin**.
+
+Examples of competing use cases include, but are not limited to:
+- Sharing this plugin on any game development marketplaces with profit purpose.
+- Sharing this plugin on any game development marketplace with non-profit purpose but without credits.
+- Publishing this plugin on any code collaboration and/or public repository storage platform without forking or giving reference to original repository.
+- Changing license
+
+For a commercial license that allows restricted use, please contact with the Licensor [frozenforeststduio@gmail.com].
+
+## 3. Change Date
+The restrictions outlined in Section 2 above will terminate after 4 years after the Licensor **archived** it.
+On the Change Date, **the Plugin** will be made available under the **MIT License**.
+
+## 4. Other Terms
+Except as expressly stated herein, no other rights or licenses are granted under this License, whether by implication, estoppel, or otherwise. All rights not expressly granted are reserved by Licensor.
+
+## 5. Warranty Disclaimer
+THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+**FAQs**
+
+1. **What is a "competing use case"?**
+   Any use of the Software that creates or powers a product/service that competes with **FF_PUGIXML** such as
+   - sharing it on Gumroad, Unreal Engine Marketplace/Fab and etc. with price tag.
+   - sharing it on Gumroad, Unreal Engine Marketplace/Fab and etc. as free but without reference.
+   - publishing on GitHub, GitLab or Bitbucket like public repository platform without forking or giving reference. As it      like the actual developer of the plugin is you.
+
+   But you can use it in your commercial products such as
+   - a commercial game or simulation project with XML processing feature.
+
+2. **Can I use this Software for personal or educational purposes?**
+   Yes, as long as it does not fall under a restricted use case.
+
+3. **When will the Software be fully open source?**
+   After 4 years after the Licensor **archived** this project.
